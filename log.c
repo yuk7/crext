@@ -29,7 +29,7 @@ static char buff[4096];
 
 int log_init()
 {
-    logfile = fopen("ext2explorelog.log", "w+");
+    logfile = fopen("crext.log", "w+");
     if(!logfile)
         return -1;
     return 0;
