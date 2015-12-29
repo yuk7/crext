@@ -13,16 +13,17 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("crext");
     QCoreApplication::setApplicationVersion("dev-1.0");
 
+    log_init();
     Ext2Read *app;
     app = new Ext2Read();
-    log_init();
+
 
     QCommandLineParser parser;
     parser.setApplicationDescription("crext is command-line based ext image/partition reader.");
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QCommandLineOption co_openfd("o","Open File/Devices","FilePath|dev");
+    QCommandLineOption co_openfd("o","Open File","FilePath");
     parser.addOption(co_openfd);
 
     QCommandLineOption co_listpart("lp","List Partitions");
@@ -44,29 +45,15 @@ int main(int argc, char *argv[])
     if(parser.isSet(co_openfd))
     {
         QString openfdopt = parser.value(co_openfd);
-        if(openfdopt != "dev")
-        {
-            int result;
-            result = app->add_loopback(openfdopt.toUtf8());
-                if(result <= 0)
-                {
-                    cout << "Open image file failed.";
-                    LOG("No valid Ext2 Partitions found in the disk image.");
-                    return 1;
-                }
-        }
-        else
-        {
-            cout << "device open selected." << endl;
 
+        int result;
+        result = app->add_loopback(openfdopt.toUtf8());
+        if(result <= 0)
+        {
+            cout << "Open image file failed.";
+            LOG("No valid Ext2 Partitions found in the disk image.");
+            return 1;
         }
-    }
-    else
-    {
-
-        cout << "ERROR: Please set Open File/Devices Option" <<endl << endl;
-        cout << "[crext --help] to show help" <<endl;
-        return 1;
     }
 
     if(parser.isSet(co_listpart)){
