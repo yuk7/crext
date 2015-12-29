@@ -23,26 +23,22 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QCommandLineOption co_openfd("o","Open File","FilePath");
+    QCommandLineOption co_openfd(QStringList() << "o" << "open","Open Image File","ImgFilePath");
     parser.addOption(co_openfd);
 
-    QCommandLineOption co_listpart("lp","List Partitions");
+    QCommandLineOption co_listpart(QStringList() << "l" << "lp","List Partitions");
     parser.addOption(co_listpart);
 
-    QCommandLineOption co_setpart("sp","Set partition","Partition name","0");
+    QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set partition","Partition name","0");
     parser.addOption(co_setpart);
 
+    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|cp");
+    parser.addOption(co_cmd);
 
-    QCommandLineOption co_cmdls("ls","List information files","-d|-l");
-    parser.addOption(co_cmdls);
-
-    QCommandLineOption co_cmdcopy("cp","copy file/directory");
-    parser.addOption(co_cmdcopy);
-
-    QCommandLineOption co_epth("epth","Path in Ext Partition","extpath");
+    QCommandLineOption co_epth(QStringList() <<"e" << "epath","Path in Ext Partition","ExtPath");
     parser.addOption(co_epth);
 
-    QCommandLineOption co_lpath("lpth","Path in Local","localpath");
+    QCommandLineOption co_lpath(QStringList() << "p" << "lpath","Path in Local","LocalPath");
     parser.addOption(co_lpath);
 
 
