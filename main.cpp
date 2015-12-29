@@ -25,10 +25,10 @@ int main(int argc, char *argv[])
     QCommandLineOption co_openfd("o","Open File/Devices","FilePath|dev");
     parser.addOption(co_openfd);
 
-    QCommandLineOption co_listparts("ip","List Partition indexes");
-    parser.addOption(co_listparts);
+    QCommandLineOption co_listpart("lp","List Partitions");
+    parser.addOption(co_listpart);
 
-    QCommandLineOption co_setpart("sp","Set partition","Partition index","0");
+    QCommandLineOption co_setpart("sp","Set partition","Partition name","0");
     parser.addOption(co_setpart);
 
 
@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
         {
             int result;
             result = app->add_loopback(openfdopt.toUtf8());
-            cout << result << endl;
                 if(result <= 0)
                 {
                     cout << "Open image file failed.";
@@ -70,9 +69,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if(parser.isSet(co_listparts)){
+    if(parser.isSet(co_listpart)){
+        Ext2Partition *temp;
+        list<Ext2Partition *> parts;
+        list<Ext2Partition *>::iterator i;
 
+        parts = app->get_partitions();
+        for(i = parts.begin(); i != parts.end(); i++)
+        {
+            temp = (*i);
+            cout << temp->get_linux_name().c_str() << endl;
 
+        }
     }
 
 
