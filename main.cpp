@@ -48,8 +48,7 @@ int main(int argc, char *argv[])
     {
         cout << "bad parameter" << endl;
         cout << "List partitions option cannot use with Other options" << endl << endl;
-        parser.showHelp();
-        return 1;
+        parser.showHelp(1);
     }
 
     if(parser.isSet(co_openf))
