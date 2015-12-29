@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
 
     parser.process(a);
 
+    if(argv[1] == NULL)
+        parser.showHelp(0);
 
     if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | parser.isSet(co_epth) | parser.isSet(co_lpath)))
     {
@@ -75,7 +77,6 @@ int main(int argc, char *argv[])
         {
             temp = (*i);
             cout << temp->get_linux_name().c_str() << endl;
-
         }
     }
 
