@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     QCommandLineOption co_listpart(QStringList() << "l" << "lp","List Partitions");
     parser.addOption(co_listpart);
 
-    QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set partition","Partition name","0");
+    QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set Partition","Partition name","0");
     parser.addOption(co_setpart);
 
     QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|cp");
@@ -44,7 +44,13 @@ int main(int argc, char *argv[])
     parser.process(a);
 
 
-
+    if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | parser.isSet(co_epth) | parser.isSet(co_lpath)))
+    {
+        cout << "bad parameter" << endl;
+        cout << "List partitions option cannot use with Other options" << endl << endl;
+        parser.showHelp();
+        return 1;
+    }
 
     if(parser.isSet(co_openf))
     {
