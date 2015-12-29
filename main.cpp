@@ -23,8 +23,8 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QCommandLineOption co_openfd(QStringList() << "o" << "open","Open Image File","ImgFilePath");
-    parser.addOption(co_openfd);
+    QCommandLineOption co_openf(QStringList() << "f" << "fopen","Open Image File","ImgFilePath");
+    parser.addOption(co_openf);
 
     QCommandLineOption co_listpart(QStringList() << "l" << "lp","List Partitions");
     parser.addOption(co_listpart);
@@ -41,17 +41,17 @@ int main(int argc, char *argv[])
     QCommandLineOption co_lpath(QStringList() << "p" << "lpath","Path in Local","LocalPath");
     parser.addOption(co_lpath);
 
-
-
     parser.process(a);
 
 
-    if(parser.isSet(co_openfd))
+
+
+    if(parser.isSet(co_openf))
     {
-        QString openfdopt = parser.value(co_openfd);
+        QString openfopt = parser.value(co_openf);
 
         int result;
-        result = app->add_loopback(openfdopt.toUtf8());
+        result = app->add_loopback(openfopt.toUtf8());
         if(result <= 0)
         {
             cout << "Open image file failed.";
