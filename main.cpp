@@ -67,18 +67,31 @@ int main(int argc, char *argv[])
         }
     }
 
+
+
+    list<Ext2Partition *> parts;
+    parts = app->get_partitions();
+
+    if(parts.size() <= 0)
+    {
+        cout << "ERR:No partitions detected." << endl;
+        cout << "Reading disk is required an Administrator. (not required for image file)" <<endl <<endl;
+        cout << "*Please make sure ext partitions exists." <<endl;
+        cout << "*Please make sure you are running this application as an Administrator." <<endl;
+        return 1;
+    }
+
     if(parser.isSet(co_listpart)){
         Ext2Partition *temp;
-        list<Ext2Partition *> parts;
         list<Ext2Partition *>::iterator i;
-
-        parts = app->get_partitions();
         for(i = parts.begin(); i != parts.end(); i++)
         {
             temp = (*i);
             cout << temp->get_linux_name().c_str() << endl;
         }
     }
+
+
 
 
 
