@@ -39,6 +39,14 @@ int main(int argc, char *argv[])
     QCommandLineOption co_cmdcopy("cp","copy file/directory");
     parser.addOption(co_cmdcopy);
 
+    QCommandLineOption co_epth("epth","Path in Ext Partition","extpath");
+    parser.addOption(co_epth);
+
+    QCommandLineOption co_lpath("lpth","Path in Local","localpath");
+    parser.addOption(co_lpath);
+
+
+
     parser.process(a);
 
 
