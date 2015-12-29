@@ -41,6 +41,41 @@ int main(int argc, char *argv[])
     parser.process(a);
 
 
+    if(parser.isSet(co_openfd))
+    {
+        QString openfdopt = parser.value(co_openfd);
+        if(openfdopt != "dev")
+        {
+            int result;
+            result = app->add_loopback(openfdopt.toUtf8());
+            cout << result << endl;
+                if(result <= 0)
+                {
+                    cout << "Open image file failed.";
+                    LOG("No valid Ext2 Partitions found in the disk image.");
+                    return 1;
+                }
+        }
+        else
+        {
+            cout << "device open selected." << endl;
+
+        }
+    }
+    else
+    {
+
+        cout << "ERROR: Please set Open File/Devices Option" <<endl << endl;
+        cout << "[crext --help] to show help" <<endl;
+        return 1;
+    }
+
+    if(parser.isSet(co_listparts)){
+
+
+    }
+
+
 
 
     return 0;
