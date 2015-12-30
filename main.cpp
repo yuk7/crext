@@ -67,8 +67,6 @@ int main(int argc, char *argv[])
         }
     }
 
-
-
     list<Ext2Partition *> parts;
     parts = app->get_partitions();
 
@@ -82,15 +80,51 @@ int main(int argc, char *argv[])
     }
 
     if(parser.isSet(co_listpart)){
-        Ext2Partition *temp;
-        list<Ext2Partition *>::iterator i;
-        for(i = parts.begin(); i != parts.end(); i++)
+        Ext2Partition *lptemp;
+
+        list<Ext2Partition *>::iterator lpi;
+        bool bl = true;
+        for(lpi = parts.begin(); lpi != parts.end(); lpi++)
         {
-            temp = (*i);
-            cout << temp->get_linux_name().c_str() << endl;
+            lptemp = (*lpi);
+            cout << lptemp->get_linux_name().c_str() << endl;
         }
+        return 0;
     }
 
+    Ext2Partition *setpart;
+    Ext2Partition *sptemp;
+    bool spsetd = false;
+    list<Ext2Partition *>::iterator spi;
+    QString optsetpart = parser.value(co_setpart);
+    for(spi = parts.begin(); spi != parts.end(); spi++)
+    {
+        sptemp = (*spi);
+        if(optsetpart == "0")
+        {
+            if(!strstr(sptemp->get_linux_name().c_str(),"/dev/sd"))
+            {
+                setpart = sptemp;
+                spsetd = true;
+            }
+        }
+        else
+        {
+            if(strstr(sptemp->get_linux_name().c_str(),optsetpart.toUtf8().data()))
+            {
+                setpart = sptemp;
+                spsetd = true;
+            }
+        }
+    }
+    if(spsetd == false)
+    {
+        cout << "ERR:can't set partition." << endl;
+        cout << "*Please make sure ext partitions name exist." <<endl;
+        return 1;
+    }
+
+    cout << setpart->get_linux_name().c_str();
 
 
 
