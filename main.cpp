@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
     QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|cp");
     parser.addOption(co_cmd);
 
-    QCommandLineOption co_epth(QStringList() <<"e" << "epath","Path in Ext Partition","ExtPath");
-    parser.addOption(co_epth);
+    QCommandLineOption co_epath(QStringList() <<"e" << "epath","Path in Ext Partition","ExtPath");
+    parser.addOption(co_epath);
 
     QCommandLineOption co_lpath(QStringList() << "p" << "lpath","Path in Local","LocalPath");
     parser.addOption(co_lpath);
@@ -48,12 +48,12 @@ int main(int argc, char *argv[])
 
     if(!(parser.isSet(co_listpart) | parser.isSet(co_cmd)))
     {
-            cout << "bad parameter" << endl;
-            cout << "List partition or Command option required." << endl << endl;
-            parser.showHelp(1);
+        cout << "bad parameter" << endl;
+        cout << "List partition or Command option required." << endl << endl;
+        parser.showHelp(1);
     }
 
-    if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | parser.isSet(co_epth) | parser.isSet(co_lpath)))
+    if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | parser.isSet(co_epath) | parser.isSet(co_lpath)))
     {
         cout << "bad parameter" << endl;
         cout << "List partitions option cannot use with Other options" << endl << endl;
@@ -89,7 +89,6 @@ int main(int argc, char *argv[])
 
     if(parser.isSet(co_listpart)){
         Ext2Partition *lptemp;
-
         list<Ext2Partition *>::iterator lpi;
         bool bl = true;
         for(lpi = parts.begin(); lpi != parts.end(); lpi++)
