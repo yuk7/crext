@@ -46,12 +46,20 @@ int main(int argc, char *argv[])
     if(argv[1] == NULL)
         parser.showHelp(0);
 
+    if(!(parser.isSet(co_listpart) | parser.isSet(co_cmd)))
+    {
+            cout << "bad parameter" << endl;
+            cout << "List partition or Command option required." << endl << endl;
+            parser.showHelp(1);
+    }
+
     if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | parser.isSet(co_epth) | parser.isSet(co_lpath)))
     {
         cout << "bad parameter" << endl;
         cout << "List partitions option cannot use with Other options" << endl << endl;
         parser.showHelp(1);
     }
+
 
     if(parser.isSet(co_openf))
     {
