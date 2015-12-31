@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
         for(lpi = parts.begin(); lpi != parts.end(); lpi++)
         {
             lptemp = (*lpi);
+            cout << lptemp->get_linux_name().c_str() << endl;
         }
         return 0;
     }
