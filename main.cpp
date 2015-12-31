@@ -171,7 +171,13 @@ int main(int argc, char *argv[])
 
     if(optcmd == "ls")
     {
+        ext2dirent *lsdirent;
+        lsdirent = setpart->open_dir(setefile);
 
+        while(setefile = setpart->read_dir(lsdirent))
+        {
+            cout << setefile->file_name.c_str() << "\t\t" << (int)setefile->file_type << "\t\t" << setefile->file_size << endl;
+        }
     }
 
     if(optcmd == "cp")
