@@ -94,7 +94,6 @@ int main(int argc, char *argv[])
         for(lpi = parts.begin(); lpi != parts.end(); lpi++)
         {
             lptemp = (*lpi);
-            cout << lptemp->get_linux_name().c_str() << endl;
         }
         return 0;
     }
@@ -131,9 +130,54 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    cout << setpart->get_linux_name().c_str();
+
+    QString optcmd = parser.value(co_cmd);
+    QString optepath = parser.value(co_epath);
+    QString optlpath = parser.value(co_lpath);
+    QStringList epathlist = optepath.split("/", QString::SkipEmptyParts);
+    Ext2File *ptr;
+    Ext2File *setefile;
+    ext2dirent *dirent;
+
+    ptr = setpart->get_root();
+    dirent = setpart->open_dir(ptr);
+
+    setefile = ptr;
+    for(int i = 0; i < epathlist.size(); i++)
+    {
+        bool efsetd = false;
+        while((ptr = setpart->read_dir(dirent)) != NULL)
+        {
+            if(strcmp(ptr->file_name.c_str(),epathlist.at(i).toLocal8Bit().constData()) == 0)
+            {
+                setefile = ptr;
+                efsetd = true;
+            }
+        }
+        if(efsetd == false)
+        {
+            cout << "ERR:Ext Path Not found" << endl;
+            cout << "*Please make sure path in selected ext partition exist." <<endl;
+            return 1;
+        }
+        else
+        {
+            dirent = setpart->open_dir(setefile);
+        }
+    }
 
 
+
+
+    if(optcmd == "ls")
+    {
+
+    }
+
+    if(optcmd == "cp")
+    {
+
+    }
 
 
 
