@@ -2,6 +2,7 @@
 #include <QCommandLineParser>
 #include <iostream>
 #include <iomanip>
+#include <QFile>
 #include "lvm.h"
 #include "ext2read.h"
 #include "ext2fs.h"
@@ -190,6 +191,57 @@ int main(int argc, char *argv[])
 
     if(optcmd == "cp")
     {
+        if(parser.isSet(co_lpath))
+        {
+            lloff_t blocks,blkindex;
+            int ret;
+            int extra;
+            QFile *filesav;
+            char *buffer;
+
+            filesav = new QFile(optlpath);
+            int blksize = setpart->get_blocksize();
+            buffer = new char [blksize];
+
+            blocks = setefile->file_size / blksize;
+
+
+            if (!filesav->open(QIODevice::ReadWrite | QIODevice::Truncate))
+                {
+                    cout << "ERR:File Creating Failed." << endl;
+                    LOG("Error creating file.\n");
+                    return 1;
+                }
+            for(blkindex = 0; blkindex < blocks; blkindex++)
+            {
+                ret = setpart->read_data_block(&setefile->inode,blkindex,buffer);
+                if(ret < 0)
+                {
+                    filesav->close();
+                    cout << "ERR:data read failed." << endl;
+                    return 1;
+                }
+                filesav->write(buffer,blksize);
+            }
+            extra = setefile->file_size % blksize;
+
+            if(extra)
+            {
+                ret = setpart->read_data_block(&setefile->inode,blkindex,buffer);
+                if(ret < 0)
+                {
+                    filesav->close();
+                    cout << "ERR:data read failed." << endl;
+                    return 1;
+                }
+                filesav->write(buffer,extra);
+            }
+            filesav->close();
+
+            cout << "done.";
+            return 0;
+        }
+
 
     }
 
