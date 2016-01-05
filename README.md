@@ -26,7 +26,7 @@ Options:
 >crext -l
 
 /dev/sda4
-/dev/sd5
+/dev/sda5
 ```
 
 ####List Files in Directory Disk Image File
