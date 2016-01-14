@@ -11,6 +11,7 @@
 
 bool copy_dir(Ext2File *srcfile,QString &destdir);
 bool copy_file(Ext2File *srcfile,QString &destfile);
+bool show_progress(int now,int max,QString str);
 
 int main(int argc, char *argv[])
 {
@@ -274,6 +275,7 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
             return false;
         }
         filesav->write(buffer, blksize);
+        show_progress(blkindex,blocks,destfile);
     }
 
     extra = srcfile->file_size % blksize;
@@ -288,5 +290,21 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
         filesav->write(buffer, extra);
     }
     filesav->close();
+    show_progress(1,1,destfile);
     return true;
+}
+
+bool show_progress(int now,int max,QString str)
+{
+    int iprog = int(double(now)/double(max) *100);
+    string progstr = "[";
+    for( int i = 0;i < (iprog/10);i++ )
+    progstr += "#";
+
+    for( int i = (iprog/10);i < 10;i++ )
+    progstr += " ";
+
+    progstr +="]";
+
+    cout << progstr << "  " << iprog << "%  " << str.toStdString() << "\r" << flush;
 }
