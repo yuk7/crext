@@ -7,12 +7,14 @@
 #include "ext2read.h"
 #include "ext2fs.h"
 
+bool copy_file(Ext2File *srcfile,QString &destfile);
+
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QCoreApplication::setApplicationName("crext");
-    QCoreApplication::setApplicationVersion("1.0.0a");
+    QCoreApplication::setApplicationVersion("1.1dev");
 
     log_init();
     Ext2Read *app;
@@ -193,53 +195,7 @@ int main(int argc, char *argv[])
     {
         if(parser.isSet(co_lpath))
         {
-            lloff_t blocks,blkindex;
-            int ret;
-            int extra;
-            QFile *filesav;
-            char *buffer;
-
-            filesav = new QFile(optlpath);
-            int blksize = setpart->get_blocksize();
-            buffer = new char [blksize];
-
-            blocks = setefile->file_size / blksize;
-
-
-            if (!filesav->open(QIODevice::ReadWrite | QIODevice::Truncate))
-                {
-                    cout << "ERR:File Creating Failed." << endl;
-                    LOG("Error creating file.\n");
-                    return 1;
-                }
-            for(blkindex = 0; blkindex < blocks; blkindex++)
-            {
-                ret = setpart->read_data_block(&setefile->inode,blkindex,buffer);
-                if(ret < 0)
-                {
-                    filesav->close();
-                    cout << "ERR:data read failed." << endl;
-                    return 1;
-                }
-                filesav->write(buffer,blksize);
-            }
-            extra = setefile->file_size % blksize;
-
-            if(extra)
-            {
-                ret = setpart->read_data_block(&setefile->inode,blkindex,buffer);
-                if(ret < 0)
-                {
-                    filesav->close();
-                    cout << "ERR:data read failed." << endl;
-                    return 1;
-                }
-                filesav->write(buffer,extra);
-            }
-            filesav->close();
-
-            cout << "done.";
-            return 0;
+            copy_file(setefile,optlpath);
         }
 
 
@@ -250,3 +206,49 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+bool copy_file(Ext2File *srcfile,QString &destfile)
+{
+    lloff_t blocks, blkindex;
+    QString qsrc;
+    QFile *filesav;
+    int extra;
+    int ret;
+    int blksize = srcfile->partition->get_blocksize();
+
+    char *buffer;
+    buffer = new char [blksize];
+
+
+    filesav = new QFile(destfile);
+    if (!filesav->open(QIODevice::ReadWrite | QIODevice::Truncate))
+    {
+        LOG("Error creating file %s.\n", srcfile->file_name.c_str());
+        return false;
+    }
+
+    blocks = srcfile->file_size / blksize;
+    for(blkindex = 0; blkindex < blocks; blkindex++)
+    {
+        ret = srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer);
+        if(ret < 0)
+        {
+            filesav->close();
+            return false;
+        }
+        filesav->write(buffer, blksize);
+    }
+
+    extra = srcfile->file_size % blksize;
+    if(extra)
+    {
+        ret = srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer);
+        if(ret < 0)
+        {
+            filesav->close();
+            return false;
+        }
+        filesav->write(buffer, extra);
+    }
+    filesav->close();
+    return true;
+}
