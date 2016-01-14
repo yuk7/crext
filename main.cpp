@@ -95,7 +95,6 @@ int main(int argc, char *argv[])
     if(parser.isSet(co_listpart)){
         Ext2Partition *lptemp;
         list<Ext2Partition *>::iterator lpi;
-        bool bl = true;
         for(lpi = parts.begin(); lpi != parts.end(); lpi++)
         {
             lptemp = (*lpi);
@@ -147,7 +146,6 @@ int main(int argc, char *argv[])
 
     ptr = setpart->get_root();
     dirent = setpart->open_dir(ptr);
-
     setefile = ptr;
     for(int i = 0; i < epathlist.size(); i++)
     {
