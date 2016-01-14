@@ -197,8 +197,6 @@ int main(int argc, char *argv[])
         {
             copy_file(setefile,optlpath);
         }
-
-
     }
 
 
@@ -206,8 +204,15 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+
 bool copy_file(Ext2File *srcfile,QString &destfile)
 {
+    if(destfile.toStdString().substr(destfile.size() - 1) == "/" |
+            destfile.toStdString().substr(destfile.size() - 1) == "\\")
+    {
+        destfile = destfile + QString(srcfile->file_name.c_str());
+    }
+
     lloff_t blocks, blkindex;
     QString qsrc;
     QFile *filesav;
