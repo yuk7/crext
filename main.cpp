@@ -222,6 +222,7 @@ bool copy_dir(Ext2File *srcfile,QString &destdir)
     dirent = part->open_dir(srcfile);
 
     QDir().mkdir(destdir);
+    cout << "dir: " << destdir.toStdString() << endl;
 
     while(srcfile = part->read_dir(dirent))
     {
@@ -247,6 +248,7 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
         destfile = destfile + QString(srcfile->file_name.c_str());
     }
 
+    cout << "file: " << destfile.toStdString() << endl;
 
     lloff_t blocks, blkindex;
     QString qsrc;
