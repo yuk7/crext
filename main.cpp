@@ -2,13 +2,15 @@
 #include <QCommandLineParser>
 #include <iostream>
 #include <iomanip>
+#include <QDir>
 #include <QFile>
 #include "lvm.h"
 #include "ext2read.h"
 #include "ext2fs.h"
 
-bool copy_file(Ext2File *srcfile,QString &destfile);
 
+bool copy_dir(Ext2File *srcfile,QString &destdir);
+bool copy_file(Ext2File *srcfile,QString &destfile);
 
 int main(int argc, char *argv[])
 {
@@ -195,7 +197,14 @@ int main(int argc, char *argv[])
     {
         if(parser.isSet(co_lpath))
         {
-            copy_file(setefile,optlpath);
+            if(EXT2_S_ISDIR(setefile->inode.i_mode))
+            {
+                copy_dir(setefile,optlpath);
+            }
+            else
+            {
+                copy_file(setefile,optlpath);
+            }
         }
     }
 
@@ -205,6 +214,31 @@ int main(int argc, char *argv[])
 }
 
 
+bool copy_dir(Ext2File *srcfile,QString &destdir)
+{
+    Ext2Partition *part;
+    ext2dirent *dirent;
+    part = srcfile->partition;
+    dirent = part->open_dir(srcfile);
+
+    QDir().mkdir(destdir);
+
+    while(srcfile = part->read_dir(dirent))
+    {
+        QString cdestpath = destdir + QString("/") +QString(srcfile->file_name.c_str());
+        if(EXT2_S_ISDIR(srcfile->inode.i_mode))
+        {
+            copy_dir(srcfile,cdestpath);
+        }
+        else
+        {
+            copy_file(srcfile,cdestpath);
+        }
+    }
+}
+
+
+
 bool copy_file(Ext2File *srcfile,QString &destfile)
 {
     if(destfile.toStdString().substr(destfile.size() - 1) == "/" |
@@ -212,6 +246,7 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
     {
         destfile = destfile + QString(srcfile->file_name.c_str());
     }
+
 
     lloff_t blocks, blkindex;
     QString qsrc;
