@@ -236,6 +236,7 @@ bool copy_dir(Ext2File *srcfile,QString &destdir)
             copy_file(srcfile,cdestpath);
         }
     }
+    return true;
 }
 
 
