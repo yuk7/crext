@@ -395,6 +395,8 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
         destfile = destfile + QString(srcfile->file_name.c_str());
     }
 
+    if(!EXT2_S_ISREG(srcfile->inode.i_mode))
+        return false;
 
     lloff_t blocks, blkindex;
     QString qsrc;
