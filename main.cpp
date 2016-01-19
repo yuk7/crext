@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set Partition","Partition name","0");
     parser.addOption(co_setpart);
 
-    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp");
+    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|mode");
     parser.addOption(co_cmd);
 
     QCommandLineOption co_epath(QStringList() <<"e" << "epath","Path in Ext Partition","ExtPath");
@@ -279,6 +279,13 @@ int main(int argc, char *argv[])
         }
         return 0;
     }
+
+    if(optcmd == "mode")
+    {
+        cout << mode_str(setefile->inode.i_mode) << endl;
+        return 0;
+    }
+
 
     cout << "bad parameter" << endl;
     cout << "The specified command option does not exist." << endl << endl;
