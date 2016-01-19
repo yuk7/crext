@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
         {
             cout << setefile->file_name.c_str() << endl;
         }
+        return 0;
     }
 
     if(optcmd == "cp")
@@ -206,9 +207,12 @@ int main(int argc, char *argv[])
                 copy_file(setefile,optlpath);
             }
         }
+        return 0;
     }
 
-
+    cout << "bad parameter" << endl;
+    cout << "The specified command option does not exist." << endl << endl;
+    parser.showHelp(1);
 
     return 0;
 }
