@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set Partition","Partition name","0");
     parser.addOption(co_setpart);
 
-    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|mode|time");
+    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|size|mode|time");
     parser.addOption(co_cmd);
 
     parser.addPositionalArgument("ePath", "Source Path(Ext Partition)");
@@ -270,6 +270,12 @@ int main(int argc, char *argv[])
                 copy_file(setefile,optlpath);
             }
         }
+        return 0;
+    }
+
+    if(optcmd == "size")
+    {
+        cout << int(setefile->file_size) << endl;
         return 0;
     }
 
