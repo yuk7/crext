@@ -218,6 +218,14 @@ string mode_str(uint16_t mode)
 {
     string str = "";
 
+    if(EXT2_S_ISREG(mode))
+        str += "-";
+    if(EXT2_S_ISDIR(mode))
+        str += "d";
+    if(EXT2_S_ISLINK(mode))
+        str += "|";
+
+
     if(mode & EXT2_S_IRUSR)
     {
         str += "r";
