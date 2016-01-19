@@ -395,6 +395,7 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
         destfile = destfile + QString(srcfile->file_name.c_str());
     }
 
+
     lloff_t blocks, blkindex;
     QString qsrc;
     QFile *filesav;
@@ -439,6 +440,7 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
     }
     filesav->close();
     show_progress(1,1,destfile);
+    cout << endl;
     return true;
 }
 
@@ -454,5 +456,5 @@ bool show_progress(int now,int max,QString str)
 
     progstr +="]";
 
-    cout << progstr << "  " << iprog << "%  " << str.toStdString() << "\r" << flush;
+    cout << progstr << " " << setw(3) << iprog << "%  " << str.toStdString() << "\r" << flush;
 }
