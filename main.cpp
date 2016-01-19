@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set Partition","Partition name","0");
     parser.addOption(co_setpart);
 
-    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|cp");
+    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp");
     parser.addOption(co_cmd);
 
     QCommandLineOption co_epath(QStringList() <<"e" << "epath","Path in Ext Partition","ExtPath");
@@ -191,6 +191,12 @@ int main(int argc, char *argv[])
         {
             cout << setefile->file_name.c_str() << endl;
         }
+        return 0;
+    }
+
+    if(optcmd == "lsl")
+    {
+
         return 0;
     }
 
