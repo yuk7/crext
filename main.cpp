@@ -183,12 +183,12 @@ int main(int argc, char *argv[])
 
             while(setefile = setpart->read_dir(lsdirent))
             {
-                cout << setefile->file_name.c_str() << "\t\t" << (int)setefile->file_type << "\t\t" << setefile->file_size << endl;
+                cout << setefile->file_name.c_str() << endl;
             }
         }
         else
         {
-            cout << setefile->file_name.c_str() << "\t\t" << (int)setefile->file_type << "\t\t" << setefile->file_size << endl;
+            cout << setefile->file_name.c_str() << endl;
         }
     }
 
