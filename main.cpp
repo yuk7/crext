@@ -222,12 +222,7 @@ int main(int argc, char *argv[])
 
                 listfmode << QString(mode_str(setefile->inode.i_mode).c_str());
 
-                char str[256];
-                time_t time = setefile->inode.i_atime;
-                struct tm *tm;
-                tm = localtime(&time);
-                strftime(str, 255, "%Y-%m-%d %I:%M", tm);
-                QString fdate = QString(str);
+                QString fdate = QString(time_str(setefile->inode.i_atime,"%Y-%m-%d %I:%M").c_str());
                 listfdate << fdate;
                 if (fdate_l_max < fdate.size())
                     fdate_l_max = fdate.size();
@@ -244,12 +239,7 @@ int main(int argc, char *argv[])
 
             listfmode << QString(mode_str(setefile->inode.i_mode).c_str());
 
-            char str[256];
-            time_t time = setefile->inode.i_atime;
-            struct tm *tm;
-            tm = localtime(&time);
-            strftime(str, 255, "%Y-%m-%d %I:%M", tm);
-            QString fdate = QString(str);
+            QString fdate = QString(time_str(setefile->inode.i_atime,"%Y-%m-%d %I:%M").c_str());
             listfdate << fdate;
             if (fdate_l_max < fdate.size())
                 fdate_l_max = fdate.size();
