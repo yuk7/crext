@@ -44,13 +44,12 @@ int main(int argc, char *argv[])
     QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|mode|time");
     parser.addOption(co_cmd);
 
-    QCommandLineOption co_epath(QStringList() <<"e" << "epath","Path in Ext Partition","ExtPath");
-    parser.addOption(co_epath);
-
-    QCommandLineOption co_lpath(QStringList() << "p" << "lpath","Path in Local","LocalPath");
-    parser.addOption(co_lpath);
+    parser.addPositionalArgument("ePath", "Source Path(Ext Partition)");
+    parser.addPositionalArgument("lPath","Destination Path(Host's File System)");
 
     parser.process(a);
+
+    QStringList pargs = parser.positionalArguments();
 
     if(argv[1] == NULL)
         parser.showHelp(0);
@@ -62,13 +61,12 @@ int main(int argc, char *argv[])
         parser.showHelp(1);
     }
 
-    if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | parser.isSet(co_epath) | parser.isSet(co_lpath)))
+    if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | (pargs.size() > 0)))
     {
         cout << "bad parameter" << endl;
         cout << "List partitions option cannot use with Other options" << endl << endl;
         parser.showHelp(1);
     }
-
 
     if(parser.isSet(co_openf))
     {
@@ -141,8 +139,12 @@ int main(int argc, char *argv[])
 
 
     QString optcmd = parser.value(co_cmd);
-    QString optepath = parser.value(co_epath);
-    QString optlpath = parser.value(co_lpath);
+    QString optepath = "";
+    QString optlpath = "";
+    if(pargs.size() >= 1)
+        optepath = pargs.at(0);
+    if(pargs.size() >= 2)
+        optlpath = pargs.at(1);
     QStringList epathlist = optepath.split("/", QString::SkipEmptyParts);
     Ext2File *ptr;
     Ext2File *setefile;
@@ -257,7 +259,7 @@ int main(int argc, char *argv[])
 
     if(optcmd == "cp")
     {
-        if(parser.isSet(co_lpath))
+        if(pargs.size() > 0)
         {
             if(EXT2_S_ISDIR(setefile->inode.i_mode))
             {
