@@ -4,6 +4,7 @@
 #include <QFile>
 #include <iostream>
 #include <iomanip>
+#include <time.h>
 #include "lvm.h"
 #include "ext2read.h"
 #include "ext2fs.h"
@@ -196,7 +197,70 @@ int main(int argc, char *argv[])
 
     if(optcmd == "lsl")
     {
+        QStringList listfname;
+        QStringList listfsize;
+        QStringList listfmode;
+        QStringList listfdate;
 
+        int fsize_l_max = 0;
+        int fdate_l_max = 0;
+
+        if(EXT2_S_ISDIR(setefile->inode.i_mode))
+        {
+            ext2dirent *lsdirent;
+            lsdirent = setpart->open_dir(setefile);
+
+            while(setefile = setpart->read_dir(lsdirent))
+            {
+                listfname << QString(setefile->file_name.c_str());
+
+                QString fsize = QString(QString::number(int(setefile->file_size)));
+                listfsize << fsize;
+                if (fsize_l_max < fsize.size())
+                    fsize_l_max = fsize.size();
+
+                listfmode << QString(mode_str(setefile->inode.i_mode).c_str());
+
+                char str[256];
+                time_t time = setefile->inode.i_atime;
+                struct tm *tm;
+                tm = localtime(&time);
+                strftime(str, 255, "%Y-%m-%d %I:%M", tm);
+                QString fdate = QString(str);
+                listfdate << fdate;
+                if (fdate_l_max < fdate.size())
+                    fdate_l_max = fdate.size();
+            }
+        }
+        else
+        {
+            listfname << QString(setefile->file_name.c_str());
+
+            QString fsize = QString(QString::number(int(setefile->file_size)));
+            listfsize << fsize;
+            if (fsize_l_max < fsize.size())
+                fsize_l_max = fsize.size();
+
+            listfmode << QString(mode_str(setefile->inode.i_mode).c_str());
+
+            char str[256];
+            time_t time = setefile->inode.i_atime;
+            struct tm *tm;
+            tm = localtime(&time);
+            strftime(str, 255, "%Y-%m-%d %I:%M", tm);
+            QString fdate = QString(str);
+            listfdate << fdate;
+            if (fdate_l_max < fdate.size())
+                fdate_l_max = fdate.size();
+        }
+
+        for(int i = 0; i < listfname.size(); i++)
+        {
+            cout << listfmode.at(i).toLocal8Bit().constData() << "  "
+                 << setw(fsize_l_max) << listfsize.at(i).toLocal8Bit().constData() << "  "
+                 << setw(fdate_l_max) <<listfdate.at(i).toLocal8Bit().constData() << "  "
+                 << listfname.at(i).toLocal8Bit().constData() << endl;
+        }
         return 0;
     }
 
