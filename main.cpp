@@ -9,6 +9,7 @@
 #include "ext2fs.h"
 
 
+string mode_str(uint16_t mode);
 bool copy_dir(Ext2File *srcfile,QString &destdir);
 bool copy_file(Ext2File *srcfile,QString &destfile);
 bool show_progress(int now,int max,QString str);
@@ -212,6 +213,11 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+
+string mode_str(uint16_t mode)
+{
+
+}
 
 bool copy_dir(Ext2File *srcfile,QString &destdir)
 {
