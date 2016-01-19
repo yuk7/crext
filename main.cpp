@@ -11,6 +11,7 @@
 
 
 string mode_str(uint16_t mode);
+string time_str(uint32_t time,const char *format);
 bool copy_dir(Ext2File *srcfile,QString &destdir);
 bool copy_file(Ext2File *srcfile,QString &destfile);
 bool show_progress(int now,int max,QString str);
@@ -344,6 +345,17 @@ string mode_str(uint16_t mode)
         str += "-";
 
     return str;
+}
+
+string time_str(uint32_t time,const char *format)
+{
+    char str[256];
+    time_t timet = time;
+    struct tm *tm;
+    tm = localtime(&timet);
+    strftime(str, 255, format, tm);
+
+    return string(str);
 }
 
 bool copy_dir(Ext2File *srcfile,QString &destdir)
