@@ -216,7 +216,83 @@ int main(int argc, char *argv[])
 
 string mode_str(uint16_t mode)
 {
+    string str = "";
 
+    if(mode & EXT2_S_IRUSR)
+    {
+        str += "r";
+    }
+    else
+    {
+        str += "-";
+    }
+    if(mode & EXT2_S_IWUSR)
+    {
+        str += "w";
+    }
+    else
+    {
+        str += "-";
+    }
+    if(mode & EXT2_S_IXUSR)
+    {
+        str += "x";
+    }
+    else
+    {
+        str += "-";
+    }
+
+    if(mode & EXT2_S_IRGRP)
+    {
+        str += "r";
+    }
+    else
+    {
+        str += "-";
+    }
+    if(mode & EXT2_S_IWGRP)
+    {
+        str += "w";
+    }
+    else
+    {
+        str += "-";
+    }
+    if(mode & EXT2_S_IXGRP)
+    {
+        str += "x";
+    }
+    else
+    {
+        str += "-";
+    }
+
+    if(mode & EXT2_S_IROTH)
+    {
+        str += "r";
+    }
+    else
+    {
+        str += "-";
+    }
+    if(mode & EXT2_S_IWOTH)
+    {
+        str += "w";
+    }
+    else
+    {
+        str += "-";
+    }
+    if(mode & EXT2_S_IXOTH)
+    {
+        str += "x";
+    }
+    else
+    {
+        str += "-";
+    }
+    return str;
 }
 
 bool copy_dir(Ext2File *srcfile,QString &destdir)
