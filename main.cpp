@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QCoreApplication::setApplicationName("crext");
-    QCoreApplication::setApplicationVersion("1.1.0a");
+    QCoreApplication::setApplicationVersion("2.0.0b");
 
     log_init();
     Ext2Read *app;
