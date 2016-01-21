@@ -1,5 +1,5 @@
 # crext
-[Download](https://github.com/yuk7/crext/releases)
+[Download](https://github.com/yuk7/crext/releases/latest)
 
 This tool is command-line ext partition/img file reader for windows.
 
