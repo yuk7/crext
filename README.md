@@ -29,7 +29,6 @@ Arguments:
 ####List Partition Tables
 ```dos
 >crext -l
-
 /dev/sda4
 /dev/sda5
 ```
@@ -38,7 +37,6 @@ Arguments:
 /bin directory in system.img
 ```dos
 >crext -f system.img -c ls /bin
-
 aapt
 adb
 akmd
