@@ -19,9 +19,10 @@
 
 #ifdef __unix__
 #include "platform.h"
-
-FileHandle open_disk(const char *path, struct disk *dsk)
+int ext2explore_log(const char *str, ...);
+FileHandle open_disk(const char *path, int *sect_size)
 {
+
 }
 
 int get_ndisks()
@@ -34,13 +35,19 @@ void close_disk(FileHandle handle)
 
 }
 
-int read_disk(FileHandle handle, void *ptr, lloff_t sector, int nsects, int sectorsize)
+int read_disk(FileHandle hnd, void *ptr, lloff_t sector, int nsects, int sectorsize)
 {
+
 }
 
 
-int write_disk(FileHandle handle, void *ptr, lloff_t sector, int nsects, int sectorsize)
+int write_disk(FileHandle hnd, void *ptr, lloff_t sector, int nsects, int sectorsize)
 {
+
 }
 
+int get_nthdevice(char *path, int ndisks)
+{
+
+}
 #endif

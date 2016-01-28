@@ -23,10 +23,9 @@
 
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
-
+#include <stdint.h>
 #ifdef WIN32
 #include <windows.h>
-#include <stdint.h>
 
  typedef HANDLE FileHandle;
 #ifdef _MSC_VER
