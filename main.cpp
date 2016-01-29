@@ -22,15 +22,13 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("crext");
     QCoreApplication::setApplicationVersion("2.0.0b");
 
-    log_init();
-    Ext2Read *app;
-    app = new Ext2Read();
-
-
     QCommandLineParser parser;
     parser.setApplicationDescription("crext is command-line based ext image/partition reader.");
     parser.addHelpOption();
     parser.addVersionOption();
+
+    QCommandLineOption co_log("log","write log to file");
+    parser.addOption(co_log);
 
     QCommandLineOption co_openf(QStringList() << "f" << "fopen","Open Image File","ImgFilePath");
     parser.addOption(co_openf);
@@ -54,6 +52,9 @@ int main(int argc, char *argv[])
     if(argv[1] == NULL)
         parser.showHelp(0);
 
+    if(parser.isSet(co_log))
+            log_init();
+
     if(!(parser.isSet(co_listpart) | parser.isSet(co_cmd)))
     {
         cout << "bad parameter" << endl;
@@ -67,6 +68,10 @@ int main(int argc, char *argv[])
         cout << "List partitions option cannot use with Other options" << endl << endl;
         parser.showHelp(1);
     }
+
+    Ext2Read *app;
+    app = new Ext2Read();
+
 
     if(parser.isSet(co_openf))
     {
