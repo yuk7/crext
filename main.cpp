@@ -401,7 +401,10 @@ bool copy_file(Ext2File *srcfile,QString &destfile)
     }
 
     if(!EXT2_S_ISREG(srcfile->inode.i_mode))
+    {
+        cout << "[Skipped  :Not a file] " << "SKIP  " << destfile.toStdString() << endl;
         return false;
+    }
 
     lloff_t blocks, blkindex;
     QString qsrc;
