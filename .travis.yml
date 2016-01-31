@@ -1,0 +1,22 @@
+sudo: required
+dist: trusty
+language: c++
+compiler:
+  - g++
+
+before_script:
+  - sudo apt-get update -qq
+  - sudo apt-get install autoconf automake autopoint bash bison bzip2 flex gettext git g++ gperf intltool libffi-dev libgdk-pixbuf2.0-dev libtool check -qq
+  - sudo apt-get install libltdl-dev libssl-dev libxml-parser-perl make openssl p7zip-full patch perl pkg-config python ruby scons sed unzip wget xz-utils check -qq
+  - sudo apt-get install g++-multilib libc6-dev-i386 check -qq
+  - git clone https://github.com/mxe/mxe.git
+  - cd mxe
+  - make qt5
+  - cd ..
+
+script:
+  - ./mxe/usr/bin/i686-w64-mingw32.static-qmake-qt5
+  - make
+
+notifications:
+  email: false
