@@ -95,6 +95,5 @@ show /bin/bash size
 ```
 
 
-
 ###License
-This program licensed under GPL v2.
+This program licensed under [GPLv2](https://github.com/yuk7/crext/blob/master/LICENSE).
