@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set Partition","Partition name","0");
     parser.addOption(co_setpart);
 
-    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|size|mode|ctime");
+    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|size|mode|ctime|mtime");
     parser.addOption(co_cmd);
 
     parser.addPositionalArgument("ePath", "Source Path(Ext Partition)");
@@ -292,6 +292,11 @@ int main(int argc, char *argv[])
     if(optcmd == "ctime")
     {
         cout << time_str(setefile->inode.i_ctime,"%Y-%m-%d %I:%M:%S") << endl;
+        return 0;
+    }
+    if(optcmd == "mtime")
+    {
+        cout << time_str(setefile->inode.i_mtime,"%Y-%m-%d %I:%M:%S") << endl;
         return 0;
     }
 
