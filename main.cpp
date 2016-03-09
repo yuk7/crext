@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
         cout << time_str(setefile->inode.i_mtime,"%Y-%m-%d %I:%M:%S") << endl;
         return 0;
     }
-    if(optcmd == "atime")
+    if(optcmd == "atime"|optcmd == "time")
     {
         cout << time_str(setefile->inode.i_atime,"%Y-%m-%d %I:%M:%S") << endl;
         return 0;
