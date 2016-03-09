@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QCoreApplication::setApplicationName("crext");
-    QCoreApplication::setApplicationVersion("2.0.0b");
+    QCoreApplication::setApplicationVersion("2.5.0b");
 
     QCommandLineParser parser;
     parser.setApplicationDescription("crext is command-line based ext image/partition reader.");

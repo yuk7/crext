@@ -3,7 +3,7 @@
 
 This tool is command-line ext partition/img file reader for windows.
 
-**Attention:This tool is test/alpha version.**
+**Attention:This tool is test version.**
 
 **Command-line options and many functions will be changed.**
 
@@ -17,7 +17,8 @@ Options:
   -f, --fopen <ImgFilePath>             Open Image File
   -l, --lp                              List Partitions
   -s, --sp <Partition name>             Set Partition
-  -c, --cmd <ls|lsl|cp|size|mode|time>  Command
+  -c, --cmd <ls|lsl|cp|size|mode|
+                    ctime|mtime|atime>  Command
 
 Arguments:
   ePath                                 Source Path(Ext Partition)
@@ -84,7 +85,7 @@ open /dev/sda5 partition & show /bin/bash mode
 
 show /bin/bash access time
 ```dos
->crext -s /dev/sda5 -c time /bin/bash
+>crext -s /dev/sda5 -c atime /bin/bash
 2016-01-14 02:52:14
 ```
 
