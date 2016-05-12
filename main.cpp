@@ -486,7 +486,7 @@ bool show_progress(int now,int max,QString str)
     int iprog = int(double(now)/double(max) *100);
     string progstr = "[";
     for( int i = 0;i < (iprog/5);i++ )
-    progstr += "#";
+    progstr += "=";
 
     for( int i = (iprog/5);i < 20;i++ )
     progstr += " ";
