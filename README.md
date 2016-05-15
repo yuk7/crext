@@ -97,4 +97,4 @@ show /bin/bash size
 
 
 ###License
-This program licensed under [GPLv2](https://github.com/yuk7/crext/blob/master/LICENSE).
+This program licensed under [GPLv3](https://github.com/yuk7/crext/blob/master/LICENSE).
