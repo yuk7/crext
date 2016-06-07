@@ -79,7 +79,7 @@ open /dev/sda5 partition & copy /boot/grub/grub.cfg to C:\grub.cfg
 
 open /dev/sda5 partition & show /bin/bash mode
 ```dos
->crext -s /dev/sda5 -c lsl /bin/bash
+>crext -s /dev/sda5 -c mode /bin/bash
 -rwxr-xr-x
 ```
 
