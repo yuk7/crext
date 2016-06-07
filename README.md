@@ -71,7 +71,7 @@ app_process32
 open /dev/sda5 partition & copy /boot/grub/grub.cfg to C:\grub.cfg
 ```dos
 >crext -s /dev/sda5 -c cp /boot/grub/grub.cfg C:\grub.cfg
-[####################] 100%  C:\grub.cfg
+[====================] 100%  C:\grub.cfg
 ```
 
 ####Show file details in HDD
