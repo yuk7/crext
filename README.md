@@ -93,7 +93,7 @@ show /bin/bash access time
 
 show /bin/bash size
 ```dos
->crext -s /dev/sda5 -c time /bin/bash
+>crext -s /dev/sda5 -c size /bin/bash
 1037464
 ```
 
