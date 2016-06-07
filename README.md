@@ -1,11 +1,13 @@
 # crext
 [Download](https://github.com/yuk7/crext/releases/latest)
 
-This tool is command-line ext partition/img file reader for windows.
+This tool is command-line ext partition reader for windows.
 
-**Attention:This tool is test version.**
+It can read and copy files from Ext2/Ext3/Ext4 partitions of Physical HDD/Disk image files. (Now support MBR only)
 
-**Command-line options and many functions will be changed.**
+**Attention:This tool is now developing and testing.**
+
+**Many command-line options and functions will be changed.**
 
 ##Usage
 ```dos
@@ -66,7 +68,7 @@ app_process32
 ```
 
 ####Copy file from ext partition in HDD
-*Reading disk is required an Administrator.*
+*Reading disk is required an Administrator permission.*
 
 open /dev/sda5 partition & copy /boot/grub/grub.cfg to C:\grub.cfg
 ```dos
@@ -75,7 +77,7 @@ open /dev/sda5 partition & copy /boot/grub/grub.cfg to C:\grub.cfg
 ```
 
 ####Show file details in HDD
-*Reading disk is required an Administrator.*
+*Reading disk is required an Administrator permission.*
 
 open /dev/sda5 partition & show /bin/bash mode
 ```dos
