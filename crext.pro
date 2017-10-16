@@ -22,5 +22,6 @@ HEADERS += \
     lvm.h \
     partition.h \
     parttypes.h \
-    platform.h
+    platform.h \
+    gpt.h
 
