@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 yuk7
+ * Copyright (c) 2015-2017 yuk7
  * Author: yuk7 <yukx00@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QCoreApplication::setApplicationName("crext");
-    QCoreApplication::setApplicationVersion("2.5.1b");
+    QCoreApplication::setApplicationVersion("2.5.2b");
 
     QCommandLineParser parser;
     parser.setApplicationDescription("crext is command-line based ext image/partition reader.");
