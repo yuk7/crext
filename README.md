@@ -1,5 +1,5 @@
 # crext
-[Download](https://github.com/yuk7/crext/releases/latest)
+### [Download](https://github.com/yuk7/crext/releases/latest)
 
 This tool is command-line ext partition reader for windows.
 
@@ -9,7 +9,7 @@ It can read and copy files from Ext2/Ext3/Ext4 partitions of Physical HDD/Disk i
 
 **Many command-line options and functions will be changed.**
 
-##Usage
+## Usage
 ```dos
 crext [options] ePath lPath
 
@@ -27,16 +27,16 @@ Arguments:
   lPath                                 Destination Path(Host's File System)
 ```
 
-###Example
+### Example
 
-####List Partition Tables
+#### List Partition Tables
 ```dos
 >crext -l
 /dev/sda4
 /dev/sda5
 ```
 
-####List Files in Disk Image File
+#### List Files in Disk Image File
 /bin directory in system.img
 ```dos
 >crext -f system.img -c ls /bin
@@ -67,7 +67,7 @@ app_process32
 ...
 ```
 
-####Copy file from ext partition in HDD
+#### Copy file from ext partition in HDD
 *Reading disk is required an Administrator permission.*
 
 open /dev/sda5 partition & copy /boot/grub/grub.cfg to C:\grub.cfg
@@ -76,7 +76,7 @@ open /dev/sda5 partition & copy /boot/grub/grub.cfg to C:\grub.cfg
 [====================] 100%  C:\grub.cfg
 ```
 
-####Show file details in HDD
+#### Show file details in HDD
 *Reading disk is required an Administrator permission.*
 
 open /dev/sda5 partition & show /bin/bash mode
@@ -98,5 +98,5 @@ show /bin/bash size
 ```
 
 
-###License
+### License
 This program licensed under [GPLv3](https://github.com/yuk7/crext/blob/master/LICENSE).
