@@ -3,7 +3,7 @@
 
 This tool is command-line ext partition reader for windows.
 
-It can read and copy files from Ext2/Ext3/Ext4 partitions of Physical HDD/Disk image files. (Now support MBR only)
+It can read and copy files from Ext2/Ext3/Ext4 partitions of Physical HDD/Disk image files.
 
 **Attention:This tool is now developing and testing.**
 
