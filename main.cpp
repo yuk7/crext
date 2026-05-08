@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017 yuk7
+ * Copyright (c) 2015-2026 yuk7
  * Author: yuk7 <yukx00@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
             show_help();
             return 0;
         } else if (arg == "--version") {
-            cout << "crext version 2.5.2b" << endl;
+            cout << "crext version 2.6.0b" << endl;
             return 0;
         } else if (arg.size() > 0 && arg[0] != '-') {
             pargs.push_back(arg);
