@@ -24,23 +24,20 @@
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
 #include <stdint.h>
-#ifdef WIN32
-#include <windows.h>
 
- typedef HANDLE FileHandle;
-#ifdef _MSC_VER
- typedef unsigned char uint8_t;
- typedef unsigned short uint16_t;
- typedef unsigned int uint32_t;
-#endif
- 
- #define FILE_DELIM		"\\"
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#  ifndef WIN32
+#    define WIN32
+#  endif
+#  include <windows.h>
+   typedef HANDLE FileHandle;
+#  define FILE_DELIM		"\\"
 #else
- typedef int FileHandle;
- #define FILE_DELIM	"/"
+   typedef int FileHandle;
+#  define FILE_DELIM	"/"
 #endif
 
- typedef uint64_t lloff_t;
+typedef uint64_t lloff_t;
 
 typedef unsigned int uint;
 typedef unsigned long ulong;

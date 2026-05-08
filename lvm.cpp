@@ -23,7 +23,8 @@
 
 #include <stdlib.h>
 #include <sstream>
-#include <QRegExp>
+#include <regex>
+#include <algorithm>
 
 #include "lvm.h"
 
@@ -40,7 +41,7 @@ LVM::~LVM()
 
 }
 
-VolumeGroup *LVM::find_volgroup(QString &uuid)
+VolumeGroup *LVM::find_volgroup(const std::string &uuid)
 {
     VolumeGroup *grp;
     list<VolumeGroup *>::iterator i;
@@ -59,7 +60,7 @@ VolumeGroup *LVM::find_volgroup(QString &uuid)
     return NULL;
 }
 
-VolumeGroup *LVM::add_volgroup(QString &uuid, QString &name, int seq, int size)
+VolumeGroup *LVM::add_volgroup(const std::string &uuid, const std::string &name, int seq, int size)
 {
     VolumeGroup *vol;
     //list <VolumeGroup *> grouplist = ext2read->get_volgroups();
@@ -96,7 +97,7 @@ int LVM::scan_pv()
             //return -1;
         }
 
-        LOG("PV Metadata: %s %UUID=%s offset %d \n",header->pv_name, header->pv_uuid, header->pv_labeloffset);
+        LOG("PV Metadata: %s %UUID=%s offset %d \n",header->pv_name, header->pv_uuid, (int)header->pv_labeloffset);
         strncpy(uuid, header->pv_uuid, UUID_LEN);
         uuid[UUID_LEN] = '\0';
         sector = (header->pv_labeloffset/SECTOR_SIZE) + pv_offset;
@@ -110,7 +111,7 @@ int LVM::scan_pv()
 
         metadata[label->pv_length] = 0;
         LOG("\n%s", metadata);
-        pv_metadata = QString::fromUtf8(metadata, label->pv_length);
+        pv_metadata.assign(metadata, label->pv_length);
         parse_metadata();
         delete [] metadata;
         break;
@@ -121,173 +122,186 @@ int LVM::scan_pv()
 // NOTE: Do error checking
 int LVM::parse_metadata()
 {
-    int num, num2, numbase;
-    QString volname, suuid;
-    int seq = 0, size = 0;
-    bool ok;
+    size_t num, num2, numbase;
+    std::string volname, suuid;
+    int seq = 0, extent_size = 0;
     VolumeGroup *grp;
-    QByteArray ba;
+    std::regex uuid_regex("[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)+");
+    std::smatch match;
 
-    num = pv_metadata.indexOf("{");
-    volname = pv_metadata.left(num - 1);
-    num = pv_metadata.indexOf(QRegExp("[a-zA-Z0-9]*-{1,}[a-zA-Z0-9]*"), 0);
-    if(num > 0)
-    {
-        suuid = pv_metadata.mid(num, 38);
-        suuid.replace("-", "");
+    num = pv_metadata.find("{");
+    if (num == std::string::npos) return -1;
+    volname = pv_metadata.substr(0, num);
+    // trim whitespace from volname
+    volname.erase(std::remove_if(volname.begin(), volname.end(), [](int c){ return ::isspace(c); }), volname.end());
+
+    if (std::regex_search(pv_metadata, match, uuid_regex)) {
+        suuid = match.str();
+        suuid.erase(std::remove(suuid.begin(), suuid.end(), '-'), suuid.end());
+        num = match.position() + match.length();
+    } else {
+        num = 0;
     }
-    num = pv_metadata.indexOf(QRegExp("[0-9]"), num + 38);
-    if(num > 0)
-    {
-        seq = pv_metadata.mid(num, 1).toInt(&ok);
-        if(!ok)
-        {
-            LOG("Cannot Parse LVM Metadata :-( \n");
-            return -1;
-        }
-    }
-    num = pv_metadata.indexOf(QRegExp("[0-9]+"), num + 1);
-    if(num > 0)
-    {
-        size = pv_metadata.mid(num, 5).toInt(&ok);
-        if(!ok)
-        {
-            LOG("Cannot Parse LVM Metadata :-( \n");
-            return -1;
+
+    std::regex digit_regex("[0-9]+");
+    std::string metadata_sub = pv_metadata.substr(num);
+    if (std::regex_search(metadata_sub, match, digit_regex)) {
+        seq = std::stoi(match.str());
+        num += match.position() + match.length();
+        metadata_sub = pv_metadata.substr(num);
+        if (std::regex_search(metadata_sub, match, digit_regex)) {
+            extent_size = std::stoi(match.str());
         }
     }
 
-    LOG("Volgroup found seq %d, extent_size %d\n",seq, size);
+    LOG("Volgroup found seq %d, extent_size %d\n", seq, extent_size);
     grp = find_volgroup(suuid);
     if(!grp)
     {
-        grp = add_volgroup(suuid, volname, seq, size);
+        grp = add_volgroup(suuid, volname, seq, extent_size);
         grp->set_ext2read(ext2read);
     }
 
     // Parse Physical Volume
     lloff_t dev_size;
     uint32_t pe_start, pe_count;
-    num = pv_metadata.indexOf("physical_volumes", 0);
-    if(num < 0)
+    num = pv_metadata.find("physical_volumes");
+    if(num == std::string::npos)
         return -1;
 
-    while((num = pv_metadata.indexOf(QRegExp("pv[0-9\\s\\t]+\\{"), num)) > 0)
-    {
-        num = pv_metadata.indexOf(QRegExp("[a-zA-Z0-9]*-{1,}[a-zA-Z0-9]*"), num);
-        if(num < 0)
-            break;
+    std::regex pv_section_regex("pv[0-9\\s\\t]+\\{");
+    metadata_sub = pv_metadata.substr(num);
+    auto pv_it = std::sregex_iterator(metadata_sub.begin(), metadata_sub.end(), pv_section_regex);
+    auto sregex_end = std::sregex_iterator();
 
-        suuid = pv_metadata.mid(num, 38);
-        suuid.replace("-", "");
-        num += 38;
-        numbase = num;
-        num = pv_metadata.indexOf(QRegExp("dev_size"), num);
-        num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-        num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-        dev_size = pv_metadata.mid(num, num2-num).toULongLong(&ok);
-        if(!ok)
-        {
-            LOG("Cannot Parse LVM Metadata (Physical Volume) :-( \n");
-            return -1;
-        }
+    for (; pv_it != sregex_end; ++pv_it) {
 
-        num = pv_metadata.indexOf(QRegExp("pe_start"), numbase);
-        num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-        num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-        pe_start = pv_metadata.mid(num, num2-num).toUInt(&ok);
-        if(!ok)
-        {
-            LOG("Cannot Parse LVM Metadata :-( \n");
-            return -1;
-        }
+        size_t pv_pos = num + pv_it->position();
+        std::string pv_sub = pv_metadata.substr(pv_pos);
+        if (std::regex_search(pv_sub, match, uuid_regex)) {
+            suuid = match.str();
+            suuid.erase(std::remove(suuid.begin(), suuid.end(), '-'), suuid.end());
+            numbase = pv_pos + match.position() + match.length();
+            
+            auto find_val = [&](const std::string& key) -> std::string {
+                size_t kpos = pv_metadata.find(key, numbase);
+                if (kpos == std::string::npos) return "";
+                size_t vpos = pv_metadata.find_first_of("0123456789", kpos);
+                if (vpos == std::string::npos) return "";
+                size_t vend = pv_metadata.find_first_not_of("0123456789", vpos);
+                if (vend == std::string::npos) vend = pv_metadata.length();
+                return pv_metadata.substr(vpos, vend - vpos);
+            };
 
-        num = pv_metadata.indexOf(QRegExp("pe_count"), numbase);
-        num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-        num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-        pe_count = pv_metadata.mid(num, num2-num).toUInt(&ok);
-        if(!ok)
-        {
-            LOG("Cannot Parse LVM Metadata (Physical Volume) :-( \n");
-            return -1;
-        }
+            std::string val_dev_size = find_val("dev_size");
+            std::string val_pe_start = find_val("pe_start");
+            std::string val_pe_count = find_val("pe_count");
 
-        LOG("Physical Volume found. start %d, count %d, size %Ld\n", pe_start, pe_count, dev_size);
-        PhysicalVolume *pvol;
-        pvol = grp->find_physical_volume(suuid);
-        num2 = suuid.compare(uuid);
-        if(!pvol && (num2 == 0))
-        {
-            pvol = grp->add_physical_volume(suuid, dev_size, pe_start, pe_count, pv_handle, pv_offset);
+            if (!val_dev_size.empty()) dev_size = std::stoull(val_dev_size);
+            if (!val_pe_start.empty()) pe_start = std::stoul(val_pe_start);
+            if (!val_pe_count.empty()) pe_count = std::stoul(val_pe_count);
+
+            LOG("Physical Volume found. start %d, count %d, size %Ld\n", pe_start, pe_count, dev_size);
+            PhysicalVolume *pvol;
+            pvol = grp->find_physical_volume(suuid);
+            if(!pvol && (suuid == uuid))
+            {
+                pvol = grp->add_physical_volume(suuid, dev_size, pe_start, pe_count, pv_handle, pv_offset);
+            }
         }
     }
 
     // Parse Logical Volume
     int nsegs;
-    num = pv_metadata.indexOf(QRegExp("logical_volumes"), 0);
-    if(num < 0)
+    num = pv_metadata.find("logical_volumes");
+    if(num == std::string::npos)
         return -1;
-    num = pv_metadata.indexOf(QRegExp("\\n"), num);
-    num += 2;
 
-    while((num = pv_metadata.indexOf(QRegExp("[a-zA-Z_0-9\\s\\t]+\\{"), num)) > 0)
-    {
-        QString lvolname = volname;
-        num2 = pv_metadata.indexOf(QRegExp("[\\s\\t]+\\{"), num);
-        lvolname.append("_");
-        lvolname.append(pv_metadata.mid(num+1, num2-num));
-        num = pv_metadata.indexOf(QRegExp("[a-zA-Z0-9]*-{1,}[a-zA-Z0-9]*"), num);
-        if(num < 0)
-            break;
+    std::regex lv_section_regex("([a-zA-Z_0-9]+)\\s*\\{");
+    metadata_sub = pv_metadata.substr(num);
+    auto lv_it = std::sregex_iterator(metadata_sub.begin(), metadata_sub.end(), lv_section_regex);
+    
+    for (; lv_it != sregex_end; ++lv_it) {
+        std::string lvolname_raw = (*lv_it)[1].str();
+        if (lvolname_raw == "physical_volumes") continue; // should not happen if we are in logical_volumes section but be safe
 
-        suuid = pv_metadata.mid(num, 38);
-        suuid.replace("-", "");
-        num += 38;
-        num = pv_metadata.indexOf("flags", num);
-        num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-        num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-        nsegs = pv_metadata.mid(num, num2-num).toInt(&ok);
-        if(!ok)
-        {
-            LOG("Cannot Parse LVM Metadata (Logical Volume) :-( \n");
-            return -1;
-        }
+        std::string lvolname = volname + "_" + lvolname_raw;
+        size_t lv_pos = num + lv_it->position();
+        std::string lv_sub = pv_metadata.substr(lv_pos);
+        
+        if (std::regex_search(lv_sub, match, uuid_regex)) {
+            suuid = match.str();
+            suuid.erase(std::remove(suuid.begin(), suuid.end(), '-'), suuid.end());
+            numbase = lv_pos + match.position() + match.length();
 
-        LogicalVolume *lvol;
-        uint32_t start_extent, extent_count;
-        lvol = grp->find_logical_volume(suuid);
-        if(!lvol)
-            lvol = grp->add_logical_volume(suuid, nsegs, lvolname);
-        LOG("Logical Volume found. Name %s, segments %d\n", lvol->volname.toUtf8().data(), nsegs);
-        for(int i = 0; i < nsegs; i++)
-        {
-            num = pv_metadata.indexOf(QRegExp("segment[0-9]+"), num);
-            num += 8;
-            numbase = num;
-            num = pv_metadata.indexOf("start_extent", num);
-            num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-            num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-            start_extent = pv_metadata.mid(num, num2-num).toInt(&ok);
+            auto find_val = [&](const std::string& key) -> std::string {
+                size_t kpos = pv_metadata.find(key, numbase);
+                if (kpos == std::string::npos) return "";
+                size_t vpos = pv_metadata.find_first_of("0123456789", kpos);
+                if (vpos == std::string::npos) return "";
+                size_t vend = pv_metadata.find_first_not_of("0123456789", vpos);
+                if (vend == std::string::npos) vend = pv_metadata.length();
+                return pv_metadata.substr(vpos, vend - vpos);
+            };
 
-            num = pv_metadata.indexOf("extent_count", numbase);
-            num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-            num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-            extent_count = pv_metadata.mid(num, num2-num).toInt(&ok);
+            std::string val_nsegs = find_val("segment_count");
+            if (!val_nsegs.empty()) nsegs = std::stoi(val_nsegs);
+            else nsegs = 0;
+            
+            LogicalVolume *lvol;
+            lvol = grp->find_logical_volume(suuid);
+            if(!lvol)
+                lvol = grp->add_logical_volume(suuid, nsegs, lvolname);
+            LOG("Logical Volume found. Name %s, segments %d\n", lvol->volname.c_str(), nsegs);
+            
+            size_t seg_base = numbase;
+            for(int i = 0; i < nsegs; i++)
+            {
+                std::regex seg_regex("segment[0-9]+");
+                std::string seg_sub = pv_metadata.substr(seg_base);
+                if (std::regex_search(seg_sub, match, seg_regex)) {
+                    seg_base += match.position() + match.length();
+                    
+                    auto find_val_seg = [&](const std::string& key) -> std::string {
+                        size_t kpos = pv_metadata.find(key, seg_base);
+                        if (kpos == std::string::npos) return "";
+                        size_t vpos = pv_metadata.find_first_of("0123456789", kpos);
+                        if (vpos == std::string::npos) return "";
+                        size_t vend = pv_metadata.find_first_not_of("0123456789", vpos);
+                        if (vend == std::string::npos) vend = pv_metadata.length();
+                        return pv_metadata.substr(vpos, vend - vpos);
+                    };
 
-            // Multiple stripes NOT Implemented: we only support linear for now.
-            lv_segment *seg = new lv_segment(start_extent, extent_count);
-            seg->stripe = new struct stripe;
-            seg->stripe->stripe_pv = 0;
-            num = pv_metadata.indexOf(QRegExp("pv[0-9]+"), num);
-            num += 4;
-
-            num = pv_metadata.indexOf(QRegExp("[0-9]+"), num);
-            num2 = pv_metadata.indexOf(QRegExp("\\n"), num);
-            seg->stripe->stripe_start_extent = pv_metadata.mid(num, num2-num).toInt(&ok);
-            num = num2;
-            seg->pvolumes = NULL;   // we do the segment -> pv mapping later because this pv might not be found yet
-            lvol->segments.push_back(seg);
-            LOG("Segment found. start %d, count %d\n", start_extent + seg->stripe->stripe_start_extent, extent_count);
+                    std::string val_start = find_val_seg("start_extent");
+                    std::string val_count = find_val_seg("extent_count");
+                    uint32_t start_extent = val_start.empty() ? 0 : std::stoul(val_start);
+                    uint32_t extent_count = val_count.empty() ? 0 : std::stoul(val_count);
+                    
+                    lv_segment *seg = new lv_segment(start_extent, extent_count);
+                    seg->stripe = new struct stripe;
+                    
+                    std::regex pv_idx_regex("pv[0-9]+");
+                    std::string pv_sub = pv_metadata.substr(seg_base);
+                    if (std::regex_search(pv_sub, match, pv_idx_regex)) {
+                        seg->stripe->stripe_pv = std::stoi(match.str().substr(2));
+                        size_t pv_end_pos = seg_base + match.position() + match.length();
+                        size_t vpos = pv_metadata.find_first_of("0123456789", pv_end_pos);
+                        if (vpos != std::string::npos) {
+                            size_t vend = pv_metadata.find_first_not_of("0123456789", vpos);
+                            if (vend == std::string::npos) vend = pv_metadata.length();
+                            seg->stripe->stripe_start_extent = std::stoul(pv_metadata.substr(vpos, vend - vpos));
+                            seg_base = vend;
+                        } else {
+                            seg->stripe->stripe_start_extent = 0;
+                            seg_base = pv_end_pos;
+                        }
+                    }
+                    
+                    seg->pvolumes = NULL;
+                    lvol->segments.push_back(seg);
+                    LOG("Segment found. start %d, count %d\n", start_extent + seg->stripe->stripe_start_extent, extent_count);
+                }
+            }
         }
     }
 
@@ -295,7 +309,7 @@ int LVM::parse_metadata()
 }
 
 
-VolumeGroup::VolumeGroup(QString &id, QString &name, int seq, int size)
+VolumeGroup::VolumeGroup(const std::string &id, const std::string &name, int seq, int size)
 {
     uuid = id;
     volname = name;
@@ -318,7 +332,7 @@ VolumeGroup::~VolumeGroup()
     }
 }
 
-PhysicalVolume *VolumeGroup::find_physical_volume(QString &id)
+PhysicalVolume *VolumeGroup::find_physical_volume(const std::string &id)
 {
     PhysicalVolume *pvol;
     list<PhysicalVolume *>::iterator i;
@@ -335,7 +349,7 @@ PhysicalVolume *VolumeGroup::find_physical_volume(QString &id)
     return NULL;
 }
 
-PhysicalVolume *VolumeGroup::add_physical_volume(QString &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset)
+PhysicalVolume *VolumeGroup::add_physical_volume(const std::string &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset)
 {
     PhysicalVolume *pvol;
 
@@ -347,7 +361,7 @@ PhysicalVolume *VolumeGroup::add_physical_volume(QString &id, lloff_t devsize, u
     return pvol;
 }
 
-LogicalVolume *VolumeGroup::find_logical_volume(QString &id)
+LogicalVolume *VolumeGroup::find_logical_volume(const std::string &id)
 {
     LogicalVolume *lvol;
     list<LogicalVolume *>::iterator i;
@@ -364,7 +378,7 @@ LogicalVolume *VolumeGroup::find_logical_volume(QString &id)
     return NULL;
 }
 
-LogicalVolume *VolumeGroup::add_logical_volume(QString &id, int count, QString &vname)
+LogicalVolume *VolumeGroup::add_logical_volume(const std::string &id, int count, const std::string &vname)
 {
     LogicalVolume *lvol;
 
@@ -416,15 +430,13 @@ void VolumeGroup::logical_mount()
             continue;
 
         int off = ((root->start_extent + root->stripe->stripe_start_extent) * lvol->this_group->extent_size);
-        LOG("PE start %d offset %d extoff %d B=%d A=%d %s\n", root->pvolumes->pe_start,
-            root->pvolumes->offset, lvol->this_group->extent_size, root->start_extent, root->stripe->stripe_start_extent, lvol->volname.toUtf8().data());
+        LOG("PE start %d offset %d extoff %d B=%d A=%d %s\n", (int)root->pvolumes->pe_start,
+            (int)root->pvolumes->offset, lvol->this_group->extent_size, (int)root->start_extent, (int)root->stripe->stripe_start_extent, lvol->volname.c_str());
         start = root->pvolumes->pe_start + root->pvolumes->offset + off;
         partition = new Ext2Partition(root->pvolumes->dev_size, start, SECTOR_SIZE, root->pvolumes->handle, lvol);
         if(partition->is_valid)
         {
-            QByteArray ba;
-            ba = lvol->volname.toUtf8();
-            partition->set_image_name(ba.data());
+            partition->set_image_name(lvol->volname.c_str());
             LOG("adding %s\n", partition->get_linux_name().c_str());
             ext2read->add_partition(partition);
         }
@@ -436,7 +448,7 @@ void VolumeGroup::logical_mount()
     }
 }
 
-PhysicalVolume::PhysicalVolume(QString &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset)
+PhysicalVolume::PhysicalVolume(const std::string &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset)
 {
     uuid = id;
     dev_size = devsize;
@@ -446,7 +458,7 @@ PhysicalVolume::PhysicalVolume(QString &id, lloff_t devsize, uint32_t start, uin
     offset = dsk_offset;
 }
 
-LogicalVolume::LogicalVolume(QString &id, int nsegs, QString &vname, VolumeGroup *vol)
+LogicalVolume::LogicalVolume(const std::string &id, int nsegs, const std::string &vname, VolumeGroup *vol)
 {
     uuid = id;
     segment_count = nsegs;

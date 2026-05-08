@@ -25,7 +25,7 @@
 #define __LVM_H
 
 #include <stdint.h>
-#include <QString>
+#include <string>
 
 #include "ext2read.h"
 
@@ -62,7 +62,7 @@ private:
     FileHandle pv_handle;
     lloff_t pv_offset;
     char uuid[UUID_LEN + 1];
-    QString pv_metadata;
+    std::string pv_metadata;
     Ext2Read *ext2read;
 public:
     LVM(FileHandle handle, lloff_t offset, Ext2Read *rd);
@@ -70,8 +70,8 @@ public:
 
     int scan_pv();
     int parse_metadata();
-    VolumeGroup *find_volgroup(QString &uuid);
-    VolumeGroup *add_volgroup(QString &uuid, QString &name, int seq, int size);
+    VolumeGroup *find_volgroup(const std::string &uuid);
+    VolumeGroup *add_volgroup(const std::string &uuid, const std::string &name, int seq, int size);
 };
 
 
@@ -81,8 +81,8 @@ public:
     FileHandle handle;
     uint32_t pe_start, pe_count;
     lloff_t offset;     // offset from the start of disk to lvm volume
-    QString uuid;
-    PhysicalVolume(QString &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset);
+    std::string uuid;
+    PhysicalVolume(const std::string &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset);
 };
 
 // Multiple stripes NOT Implemented: we only support linear for now.
@@ -110,20 +110,20 @@ class LogicalVolume {
 
 public:
     VolumeGroup *this_group;
-    QString uuid;
-    QString volname;
+    std::string uuid;
+    std::string volname;
     std::list <lv_segment *> segments;
     //std::list <PhysicalVolume *> pvolumes;
 
-    LogicalVolume(QString &id, int nsegs, QString &vname, VolumeGroup *);
+    LogicalVolume(const std::string &id, int nsegs, const std::string &vname, VolumeGroup *);
     ~LogicalVolume();
     lloff_t lvm_mapper(lloff_t block);
 };
 
 class VolumeGroup {
 public:
-    QString volname;
-    QString uuid;
+    std::string volname;
+    std::string uuid;
     int extent_size;
     int seqno;
     int max_lv, max_pv;
@@ -132,12 +132,12 @@ public:
     Ext2Read *ext2read;
 
 public:
-    VolumeGroup(QString &id, QString &name, int seq, int size);
+    VolumeGroup(const std::string &id, const std::string &name, int seq, int size);
     ~VolumeGroup();
-    PhysicalVolume *find_physical_volume(QString &id);
-    PhysicalVolume *add_physical_volume(QString &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset);
-    LogicalVolume *find_logical_volume(QString &id);
-    LogicalVolume *add_logical_volume(QString &id, int count, QString &vname);
+    PhysicalVolume *find_physical_volume(const std::string &id);
+    PhysicalVolume *add_physical_volume(const std::string &id, lloff_t devsize, uint32_t start, uint32_t count, FileHandle file, lloff_t dsk_offset);
+    LogicalVolume *find_logical_volume(const std::string &id);
+    LogicalVolume *add_logical_volume(const std::string &id, int count, const std::string &vname);
     void logical_mount();
     void set_ext2read(Ext2Read *ext2) { ext2read = ext2; }
 };

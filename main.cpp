@@ -16,316 +16,272 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QCoreApplication>
-#include <QCommandLineParser>
-#include <QDir>
-#include <QFile>
 #include <iostream>
 #include <iomanip>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <filesystem>
 #include <time.h>
+#include <cstring>
 #include "lvm.h"
 #include "ext2read.h"
 #include "ext2fs.h"
 
+using namespace std;
+namespace fs = std::filesystem;
 
 string mode_str(uint16_t mode);
-string time_str(uint32_t time,const char *format);
-bool copy_dir(Ext2File *srcfile,QString &destdir);
-bool copy_file(Ext2File *srcfile,QString &destfile);
-bool show_progress(int now,int max,QString str);
+string time_str(uint32_t time, const char *format);
+bool copy_dir(Ext2File *srcfile, const string &destdir);
+bool copy_file(Ext2File *srcfile, string destfile);
+bool show_progress(int now, int max, const string &str);
+
+void show_help() {
+    cout << "crext is command-line based ext image/partition reader." << endl;
+    cout << "Usage: crext [options] [ePath] [lPath]" << endl;
+    cout << "Options:" << endl;
+    cout << "  -f, --fopen <ImgFilePath>  Open Image File" << endl;
+    cout << "  -l, --lp                   List Partitions" << endl;
+    cout << "  -s, --sp <Partition name>  Set Partition (default: 0)" << endl;
+    cout << "  -c, --cmd <Command>        ls|lsl|cp|size|mode|ctime|mtime|atime" << endl;
+    cout << "  --log                      Write log to file" << endl;
+    cout << "  --help                     Show this help" << endl;
+    cout << "  --version                  Show version" << endl;
+}
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
-    QCoreApplication::setApplicationName("crext");
-    QCoreApplication::setApplicationVersion("2.5.2b");
+    string openfopt = "";
+    bool listpart = false;
+    string optsetpart = "0";
+    string optcmd = "";
+    bool use_log = false;
+    vector<string> pargs;
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription("crext is command-line based ext image/partition reader.");
-    parser.addHelpOption();
-    parser.addVersionOption();
+    for (int i = 1; i < argc; ++i) {
+        string arg = argv[i];
+        if (arg == "-f" || arg == "--fopen") {
+            if (i + 1 < argc) openfopt = argv[++i];
+        } else if (arg == "-l" || arg == "--lp") {
+            listpart = true;
+        } else if (arg == "-s" || arg == "--sp") {
+            if (i + 1 < argc) optsetpart = argv[++i];
+        } else if (arg == "-c" || arg == "--cmd") {
+            if (i + 1 < argc) optcmd = argv[++i];
+        } else if (arg == "--log") {
+            use_log = true;
+        } else if (arg == "--help") {
+            show_help();
+            return 0;
+        } else if (arg == "--version") {
+            cout << "crext version 2.5.2b" << endl;
+            return 0;
+        } else if (arg.size() > 0 && arg[0] != '-') {
+            pargs.push_back(arg);
+        }
+    }
 
-    QCommandLineOption co_log("log","write log to file");
-    parser.addOption(co_log);
+    if (argc == 1) {
+        show_help();
+        return 0;
+    }
 
-    QCommandLineOption co_openf(QStringList() << "f" << "fopen","Open Image File","ImgFilePath");
-    parser.addOption(co_openf);
+    if (use_log)
+        log_init();
 
-    QCommandLineOption co_listpart(QStringList() << "l" << "lp","List Partitions");
-    parser.addOption(co_listpart);
-
-    QCommandLineOption co_setpart(QStringList() << "s" << "sp","Set Partition","Partition name","0");
-    parser.addOption(co_setpart);
-
-    QCommandLineOption co_cmd(QStringList() << "c" << "cmd","Command","ls|lsl|cp|size|mode|ctime|mtime|atime");
-    parser.addOption(co_cmd);
-
-    parser.addPositionalArgument("ePath", "Source Path(Ext Partition)");
-    parser.addPositionalArgument("lPath","Destination Path(Host's File System)");
-
-    parser.process(a);
-
-    QStringList pargs = parser.positionalArguments();
-
-    if(argv[1] == NULL)
-        parser.showHelp(0);
-
-    if(parser.isSet(co_log))
-            log_init();
-
-    if(!(parser.isSet(co_listpart) | parser.isSet(co_cmd)))
-    {
+    if (!(listpart || !optcmd.empty())) {
         cout << "bad parameter" << endl;
         cout << "List partition or Command option required." << endl << endl;
-        parser.showHelp(1);
+        show_help();
+        return 1;
     }
 
-    if(parser.isSet(co_listpart) && (parser.isSet(co_setpart) | parser.isSet(co_cmd) | (pargs.size() > 0)))
-    {
-        cout << "bad parameter" << endl;
-        cout << "List partitions option cannot use with Other options" << endl << endl;
-        parser.showHelp(1);
+    if (listpart && ((!optsetpart.empty() && optsetpart != "0") || !optcmd.empty() || !pargs.empty())) {
+        // Allow listpart with default optsetpart="0"
+        if (!optcmd.empty() || !pargs.empty()) {
+            cout << "bad parameter" << endl;
+            cout << "List partitions option cannot use with Other options" << endl << endl;
+            show_help();
+            return 1;
+        }
     }
 
-    Ext2Read *app;
-    app = new Ext2Read();
+    Ext2Read *app = new Ext2Read();
 
-
-    if(parser.isSet(co_openf))
-    {
-        QString openfopt = parser.value(co_openf);
-
-        int result;
-        result = app->add_loopback(openfopt.toUtf8());
-        if(result <= 0)
-        {
-            cout << "Open image file failed.";
+    if (!openfopt.empty()) {
+        int result = app->add_loopback(openfopt.c_str());
+        if (result <= 0) {
+            cout << "Open image file failed." << endl;
             LOG("No valid Ext2 Partitions found in the disk image.");
             return 1;
         }
     }
 
-    list<Ext2Partition *> parts;
-    parts = app->get_partitions();
+    list<Ext2Partition *> parts = app->get_partitions();
 
-    if(parts.size() <= 0)
-    {
+    if (parts.empty()) {
         cout << "ERR:No partitions detected." << endl;
-        cout << "Reading disk is required an Administrator. (not required for image file)" <<endl <<endl;
-        cout << "*Please make sure ext partitions exists." <<endl;
-        cout << "*Please make sure you are running this application as an Administrator." <<endl;
+        cout << "Reading disk is required an Administrator. (not required for image file)" << endl << endl;
+        cout << "*Please make sure ext partitions exists." << endl;
+        cout << "*Please make sure you are running this application as an Administrator." << endl;
         return 1;
     }
 
-    if(parser.isSet(co_listpart)){
-        Ext2Partition *lptemp;
-        list<Ext2Partition *>::iterator lpi;
-        for(lpi = parts.begin(); lpi != parts.end(); lpi++)
-        {
-            lptemp = (*lpi);
-            cout << lptemp->get_linux_name().c_str() << endl;
+    if (listpart) {
+        for (auto part : parts) {
+            cout << part->get_linux_name() << endl;
         }
         return 0;
     }
 
-    Ext2Partition *setpart;
-    Ext2Partition *sptemp;
+    Ext2Partition *setpart = nullptr;
     bool spsetd = false;
-    list<Ext2Partition *>::iterator spi;
-    QString optsetpart = parser.value(co_setpart);
-    for(spi = parts.begin(); spi != parts.end(); spi++)
-    {
-        sptemp = (*spi);
-        if(optsetpart == "0")
-        {
-            if(!strstr(sptemp->get_linux_name().c_str(),"/dev/sd"))
-            {
-                setpart = sptemp;
+    for (auto part : parts) {
+        if (optsetpart == "0") {
+            if (part->get_linux_name().find("/dev/sd") == string::npos) {
+                setpart = part;
                 spsetd = true;
             }
-        }
-        else
-        {
-            if(strstr(sptemp->get_linux_name().c_str(),optsetpart.toUtf8().data()))
-            {
-                setpart = sptemp;
+        } else {
+            if (part->get_linux_name().find(optsetpart) != string::npos) {
+                setpart = part;
                 spsetd = true;
             }
         }
     }
-    if(spsetd == false)
-    {
+
+    if (!spsetd) {
         cout << "ERR:can't set partition." << endl;
-        cout << "*Please make sure ext partitions name exist." <<endl;
+        cout << "*Please make sure ext partitions name exist." << endl;
         return 1;
     }
 
+    string optepath = "";
+    string optlpath = "";
+    if (pargs.size() >= 1) optepath = pargs[0];
+    if (pargs.size() >= 2) optlpath = pargs[1];
 
-    QString optcmd = parser.value(co_cmd);
-    QString optepath = "";
-    QString optlpath = "";
-    if(pargs.size() >= 1)
-        optepath = pargs.at(0);
-    if(pargs.size() >= 2)
-        optlpath = pargs.at(1);
-    QStringList epathlist = optepath.split("/", QString::SkipEmptyParts);
-    Ext2File *ptr;
-    Ext2File *setefile;
-    ext2dirent *dirent;
-
-    ptr = setpart->get_root();
-    dirent = setpart->open_dir(ptr);
-    setefile = ptr;
-    for(int i = 0; i < epathlist.size(); i++)
+    vector<string> epathlist;
     {
+        stringstream ss(optepath);
+        string item;
+        while (getline(ss, item, '/')) {
+            if (!item.empty()) epathlist.push_back(item);
+        }
+    }
+
+    Ext2File *ptr = setpart->get_root();
+    ext2dirent *dirent = setpart->open_dir(ptr);
+    Ext2File *setefile = ptr;
+
+    for (const auto& path : epathlist) {
         bool efsetd = false;
-        while((ptr = setpart->read_dir(dirent)) != NULL)
-        {
-            if(strcmp(ptr->file_name.c_str(),epathlist.at(i).toLocal8Bit().constData()) == 0)
-            {
+        while ((ptr = setpart->read_dir(dirent)) != nullptr) {
+            if (ptr->file_name == path) {
                 setefile = ptr;
                 efsetd = true;
+                break;
             }
         }
-        if(efsetd == false)
-        {
+        if (!efsetd) {
             cout << "ERR:Ext Path Not found" << endl;
-            cout << "*Please make sure path in selected ext partition exist." <<endl;
+            cout << "*Please make sure path in selected ext partition exist." << endl;
             return 1;
-        }
-        else
-        {
+        } else {
             dirent = setpart->open_dir(setefile);
         }
     }
 
-
-
-
-    if(optcmd == "ls")
-    {
-        if(EXT2_S_ISDIR(setefile->inode.i_mode))
-        {
-            ext2dirent *lsdirent;
-            lsdirent = setpart->open_dir(setefile);
-
-            while(setefile = setpart->read_dir(lsdirent))
-            {
-                cout << setefile->file_name.c_str() << endl;
+    if (optcmd == "ls") {
+        if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
+            ext2dirent *lsdirent = setpart->open_dir(setefile);
+            while (auto entry = setpart->read_dir(lsdirent)) {
+                cout << entry->file_name << endl;
             }
-        }
-        else
-        {
-            cout << setefile->file_name.c_str() << endl;
+        } else {
+            cout << setefile->file_name << endl;
         }
         return 0;
     }
 
-    if(optcmd == "lsl")
-    {
-        QStringList listfname;
-        QStringList listfsize;
-        QStringList listfmode;
-        QStringList listfdate;
+    if (optcmd == "lsl") {
+        struct FileInfo {
+            string name;
+            string size;
+            string mode;
+            string date;
+        };
+        vector<FileInfo> listfiles;
 
-        int fsize_l_max = 0;
-        int fdate_l_max = 0;
+        size_t fsize_l_max = 0;
+        size_t fdate_l_max = 0;
 
-        if(EXT2_S_ISDIR(setefile->inode.i_mode))
-        {
-            ext2dirent *lsdirent;
-            lsdirent = setpart->open_dir(setefile);
+        auto add_file_info = [&](Ext2File* f) {
+            FileInfo info;
+            info.name = f->file_name;
+            info.size = to_string(f->file_size);
+            info.mode = mode_str(f->inode.i_mode);
+            info.date = time_str(f->inode.i_atime, "%Y-%m-%d %H:%M");
+            
+            fsize_l_max = max(fsize_l_max, info.size.length());
+            fdate_l_max = max(fdate_l_max, info.date.length());
+            listfiles.push_back(info);
+        };
 
-            while(setefile = setpart->read_dir(lsdirent))
-            {
-                listfname << QString(setefile->file_name.c_str());
-
-                QString fsize = QString(QString::number(int(setefile->file_size)));
-                listfsize << fsize;
-                if (fsize_l_max < fsize.size())
-                    fsize_l_max = fsize.size();
-
-                listfmode << QString(mode_str(setefile->inode.i_mode).c_str());
-
-                QString fdate = QString(time_str(setefile->inode.i_atime,"%Y-%m-%d %I:%M").c_str());
-                listfdate << fdate;
-                if (fdate_l_max < fdate.size())
-                    fdate_l_max = fdate.size();
+        if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
+            ext2dirent *lsdirent = setpart->open_dir(setefile);
+            while (auto entry = setpart->read_dir(lsdirent)) {
+                add_file_info(entry);
             }
-        }
-        else
-        {
-            listfname << QString(setefile->file_name.c_str());
-
-            QString fsize = QString(QString::number(int(setefile->file_size)));
-            listfsize << fsize;
-            if (fsize_l_max < fsize.size())
-                fsize_l_max = fsize.size();
-
-            listfmode << QString(mode_str(setefile->inode.i_mode).c_str());
-
-            QString fdate = QString(time_str(setefile->inode.i_atime,"%Y-%m-%d %I:%M").c_str());
-            listfdate << fdate;
-            if (fdate_l_max < fdate.size())
-                fdate_l_max = fdate.size();
+        } else {
+            add_file_info(setefile);
         }
 
-        for(int i = 0; i < listfname.size(); i++)
-        {
-            cout << listfmode.at(i).toLocal8Bit().constData() << "  "
-                 << setw(fsize_l_max) << listfsize.at(i).toLocal8Bit().constData() << "  "
-                 << setw(fdate_l_max) <<listfdate.at(i).toLocal8Bit().constData() << "  "
-                 << listfname.at(i).toLocal8Bit().constData() << endl;
+        for (const auto& info : listfiles) {
+            cout << info.mode << "  "
+                 << setw(fsize_l_max) << info.size << "  "
+                 << setw(fdate_l_max) << info.date << "  "
+                 << info.name << endl;
         }
         return 0;
     }
 
-    if(optcmd == "cp")
-    {
-        if(pargs.size() > 0)
-        {
-            if(EXT2_S_ISDIR(setefile->inode.i_mode))
-            {
-                copy_dir(setefile,optlpath);
-            }
-            else
-            {
-                copy_file(setefile,optlpath);
+    if (optcmd == "cp") {
+        if (!optepath.empty()) {
+            if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
+                copy_dir(setefile, optlpath);
+            } else {
+                copy_file(setefile, optlpath);
             }
         }
         return 0;
     }
 
-    if(optcmd == "size")
-    {
-        cout << int(setefile->file_size) << endl;
+    if (optcmd == "size") {
+        cout << setefile->file_size << endl;
         return 0;
     }
-
-    if(optcmd == "mode")
-    {
+    if (optcmd == "mode") {
         cout << mode_str(setefile->inode.i_mode) << endl;
         return 0;
     }
-    if(optcmd == "ctime")
-    {
-        cout << time_str(setefile->inode.i_ctime,"%Y-%m-%d %I:%M:%S") << endl;
+    if (optcmd == "ctime") {
+        cout << time_str(setefile->inode.i_ctime, "%Y-%m-%d %H:%M:%S") << endl;
         return 0;
     }
-    if(optcmd == "mtime")
-    {
-        cout << time_str(setefile->inode.i_mtime,"%Y-%m-%d %I:%M:%S") << endl;
+    if (optcmd == "mtime") {
+        cout << time_str(setefile->inode.i_mtime, "%Y-%m-%d %H:%M:%S") << endl;
         return 0;
     }
-    if(optcmd == "atime"|optcmd == "time")
-    {
-        cout << time_str(setefile->inode.i_atime,"%Y-%m-%d %I:%M:%S") << endl;
+    if (optcmd == "atime" || optcmd == "time") {
+        cout << time_str(setefile->inode.i_atime, "%Y-%m-%d %H:%M:%S") << endl;
         return 0;
     }
 
     cout << "bad parameter" << endl;
     cout << "The specified command option does not exist." << endl << endl;
-    parser.showHelp(1);
+    show_help();
 
     return 0;
 }
@@ -334,164 +290,104 @@ int main(int argc, char *argv[])
 string mode_str(uint16_t mode)
 {
     string str = "";
+    if (EXT2_S_ISREG(mode)) str += "-";
+    else if (EXT2_S_ISDIR(mode)) str += "d";
+    else if (EXT2_S_ISLINK(mode)) str += "l";
+    else str += "?";
 
-    if(EXT2_S_ISREG(mode))
-        str += "-";
-    if(EXT2_S_ISDIR(mode))
-        str += "d";
-    if(EXT2_S_ISLINK(mode))
-        str += "|";
-
-    if(mode & EXT2_S_IRUSR)
-        str += "r";
-    else
-        str += "-";
-    if(mode & EXT2_S_IWUSR)
-        str += "w";
-    else
-        str += "-";
-    if(mode & EXT2_S_IXUSR)
-        str += "x";
-    else
-        str += "-";
-    if(mode & EXT2_S_IRGRP)
-        str += "r";
-    else
-        str += "-";
-    if(mode & EXT2_S_IWGRP)
-        str += "w";
-    else
-        str += "-";
-    if(mode & EXT2_S_IXGRP)
-        str += "x";
-    else
-        str += "-";
-    if(mode & EXT2_S_IROTH)
-        str += "r";
-    else
-        str += "-";
-    if(mode & EXT2_S_IWOTH)
-        str += "w";
-    else
-        str += "-";
-    if(mode & EXT2_S_IXOTH)
-        str += "x";
-    else
-        str += "-";
-
+    str += (mode & EXT2_S_IRUSR) ? "r" : "-";
+    str += (mode & EXT2_S_IWUSR) ? "w" : "-";
+    str += (mode & EXT2_S_IXUSR) ? "x" : "-";
+    str += (mode & EXT2_S_IRGRP) ? "r" : "-";
+    str += (mode & EXT2_S_IWGRP) ? "w" : "-";
+    str += (mode & EXT2_S_IXGRP) ? "x" : "-";
+    str += (mode & EXT2_S_IROTH) ? "r" : "-";
+    str += (mode & EXT2_S_IWOTH) ? "w" : "-";
+    str += (mode & EXT2_S_IXOTH) ? "x" : "-";
     return str;
 }
 
-string time_str(uint32_t time,const char *format)
+string time_str(uint32_t time, const char *format)
 {
     char str[256];
     time_t timet = time;
-    struct tm *tm;
-    tm = localtime(&timet);
+    struct tm *tm = localtime(&timet);
+    if (!tm) return "N/A";
     strftime(str, 255, format, tm);
-
     return string(str);
 }
 
-bool copy_dir(Ext2File *srcfile,QString &destdir)
+bool copy_dir(Ext2File *srcfile, const string &destdir)
 {
-    Ext2Partition *part;
-    ext2dirent *dirent;
-    part = srcfile->partition;
-    dirent = part->open_dir(srcfile);
+    Ext2Partition *part = srcfile->partition;
+    ext2dirent *dirent = part->open_dir(srcfile);
 
-    QDir().mkdir(destdir);
+    fs::create_directories(destdir);
 
-    while(srcfile = part->read_dir(dirent))
-    {
-        QString cdestpath = destdir + QString("/") +QString(srcfile->file_name.c_str());
-        if(EXT2_S_ISDIR(srcfile->inode.i_mode))
-        {
-            copy_dir(srcfile,cdestpath);
-        }
-        else
-        {
-            copy_file(srcfile,cdestpath);
+    Ext2File *entry;
+    while ((entry = part->read_dir(dirent)) != nullptr) {
+        string cdestpath = (fs::path(destdir) / entry->file_name).string();
+        if (EXT2_S_ISDIR(entry->inode.i_mode)) {
+            copy_dir(entry, cdestpath);
+        } else {
+            copy_file(entry, cdestpath);
         }
     }
     return true;
 }
 
-
-
-bool copy_file(Ext2File *srcfile,QString &destfile)
+bool copy_file(Ext2File *srcfile, string destfile)
 {
-    if(destfile.toStdString().substr(destfile.size() - 1) == "/" |
-            destfile.toStdString().substr(destfile.size() - 1) == "\\")
-    {
-        destfile = destfile + QString(srcfile->file_name.c_str());
+    if (destfile.empty() || fs::is_directory(destfile)) {
+        destfile = (fs::path(destfile) / srcfile->file_name).string();
     }
 
-    if(!EXT2_S_ISREG(srcfile->inode.i_mode))
-    {
-        cout << "[Skipped  :Not a file] " << "SKIP  " << destfile.toStdString() << endl;
+    if (!EXT2_S_ISREG(srcfile->inode.i_mode)) {
+        cout << "[Skipped  :Not a file] " << "SKIP  " << destfile << endl;
         return false;
     }
 
-    lloff_t blocks, blkindex;
-    QString qsrc;
-    QFile *filesav;
-    int extra;
-    int ret;
     int blksize = srcfile->partition->get_blocksize();
+    vector<char> buffer(blksize);
 
-    char *buffer;
-    buffer = new char [blksize];
-
-
-    filesav = new QFile(destfile);
-    if (!filesav->open(QIODevice::ReadWrite | QIODevice::Truncate))
-    {
+    ofstream filesav(destfile, ios::binary | ios::trunc);
+    if (!filesav.is_open()) {
         LOG("Error creating file %s.\n", srcfile->file_name.c_str());
         return false;
     }
 
-    blocks = srcfile->file_size / blksize;
-    for(blkindex = 0; blkindex < blocks; blkindex++)
-    {
-        ret = srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer);
-        if(ret < 0)
-        {
-            filesav->close();
+    lloff_t blocks = srcfile->file_size / blksize;
+    lloff_t blkindex;
+    for (blkindex = 0; blkindex < blocks; blkindex++) {
+        if (srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer.data()) < 0) {
             return false;
         }
-        filesav->write(buffer, blksize);
-        show_progress(blkindex,blocks,destfile);
+        filesav.write(buffer.data(), blksize);
+        show_progress(blkindex, blocks, destfile);
     }
 
-    extra = srcfile->file_size % blksize;
-    if(extra)
-    {
-        ret = srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer);
-        if(ret < 0)
-        {
-            filesav->close();
+    int extra = srcfile->file_size % blksize;
+    if (extra) {
+        if (srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer.data()) < 0) {
             return false;
         }
-        filesav->write(buffer, extra);
+        filesav.write(buffer.data(), extra);
     }
-    filesav->close();
-    show_progress(1,1,destfile);
+    filesav.close();
+    show_progress(1, 1, destfile);
     cout << endl;
     return true;
 }
 
-bool show_progress(int now,int max,QString str)
+bool show_progress(int now, int max, const string &str)
 {
-    int iprog = int(double(now)/double(max) *100);
+    int iprog = (max == 0) ? 100 : (int)((double)now / (double)max * 100);
+    if (iprog > 100) iprog = 100;
     string progstr = "[";
-    for( int i = 0;i < (iprog/5);i++ )
-    progstr += "=";
+    for (int i = 0; i < (iprog / 5); i++) progstr += "=";
+    for (int i = (iprog / 5); i < 20; i++) progstr += " ";
+    progstr += "]";
 
-    for( int i = (iprog/5);i < 20;i++ )
-    progstr += " ";
-
-    progstr +="]";
-
-    cout << progstr << " " << setw(3) << iprog << "%  " << str.toStdString() << "\r" << flush;
+    cout << progstr << " " << setw(3) << iprog << "%  " << str << "\r" << flush;
+    return true;
 }

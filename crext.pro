@@ -4,8 +4,14 @@ QT -= gui
 TARGET = crext
 CONFIG += console
 CONFIG -= app_bundle
+CONFIG += c++17
 
 TEMPLATE = app
+
+win32: DEFINES += WIN32
+
+# For GCC < 9, -lstdc++fs might still be needed
+LIBS += -lstdc++fs
 
 SOURCES += main.cpp \
     ext2fs.cpp \

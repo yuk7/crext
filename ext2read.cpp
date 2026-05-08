@@ -243,7 +243,11 @@ int Ext2Read::scan_partitions(char *path, int diskno)
     int ret, i;
 
     handle = open_disk(path, &sector_size);
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+    if(handle == INVALID_HANDLE_VALUE)
+#else
     if(handle < 0)
+#endif
         return -1;
 
     ret = read_disk(handle,sector, 0, 1, sector_size);
@@ -313,24 +317,35 @@ int Ext2Read::add_loopback(const char *file)
     int ret, sector_size;
     Ext2Partition *partition;
     FileHandle handle;
+    size_t old_count = nparts.size();
 
     ndisks++;
-   ret = scan_partitions((char *)file, ndisks);
-   if(ret == -INVALID_TABLE)
-   {
-       handle = open_disk(file, &sector_size);
-       partition = new Ext2Partition(0, 0, sector_size, handle, NULL);
-       if(partition->is_valid)
-       {
-            partition->set_image_name(file);
-            nparts.push_back(partition);
-            LOG("Linux Partition found on disk %d partition %d\n", ndisks, 0);
-            return 1;
+    ret = scan_partitions((char *)file, ndisks);
+    if (nparts.size() > old_count)
+        return 1;
+
+    if(ret == -INVALID_TABLE)
+    {
+        handle = open_disk(file, &sector_size);
+#if defined(WIN32) || defined(_WIN32)
+        if(handle != INVALID_HANDLE_VALUE)
+#else
+        if(handle >= 0)
+#endif
+        {
+            partition = new Ext2Partition(0, 0, sector_size, handle, NULL);
+            if(partition->is_valid)
+            {
+                partition->set_image_name(file);
+                nparts.push_back(partition);
+                LOG("Linux Partition found on disk %d partition %d\n", ndisks, 0);
+                return 1;
+            }
+            else
+            {
+                delete partition;
+            }
         }
-       else
-       {
-           delete partition;
-       }
-   }
-   return 0;
+    }
+    return 0;
 }

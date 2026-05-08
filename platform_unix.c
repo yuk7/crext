@@ -17,7 +17,7 @@
  * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  **/
 
-#ifdef __unix__
+#if defined(__unix__) || defined(__linux__) || defined(__APPLE__)
 #include "platform.h"
 int ext2explore_log(const char *str, ...);
 FileHandle open_disk(const char *path, int *sect_size)
@@ -50,4 +50,5 @@ int get_nthdevice(char *path, int ndisks)
 {
 
 }
+
 #endif

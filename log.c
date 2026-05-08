@@ -39,6 +39,8 @@ int ext2explore_log(const char *msg, ...)
 {
     va_list ap;
 
+    if (!logfile) return 0;
+
     va_start(ap, msg);
     vsnprintf(buff, 4096, msg, ap);
     va_end(ap);

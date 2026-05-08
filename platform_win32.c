@@ -17,7 +17,7 @@
  * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  **/
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #include <windows.h>
 #include <winioctl.h>
 #include <fcntl.h>

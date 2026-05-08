@@ -30,7 +30,7 @@
 
 #include <list>
 #include <string>
-#include <QCache>
+#include "lru_cache.h"
 
 #include "platform.h"
 #include "ext2fs.h"
@@ -155,7 +155,8 @@ class Ext2Partition {
     char *inode_buffer;         // buffer to cache last used block of inodes
     lloff_t last_block;          // block number of the last inode block read
     Ext2File *root;
-    QCache <lloff_t , char > buffercache; //LRU based cache for blocks
+    LRUCache <lloff_t , char > buffercache; //LRU based cache for blocks
+
     LogicalVolume *lvol;
     
     int ext2_readblock(lloff_t blocknum, void *buffer);
