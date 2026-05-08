@@ -1,9 +1,9 @@
 # crext
 ### [Download](https://github.com/yuk7/crext/releases/latest)
 
-This tool is command-line ext partition reader for windows.
+This tool is a standalone command-line ext partition reader compatible with Windows, Linux, and macOS.
 
-It can read and copy files from Ext2/Ext3/Ext4 partitions of Physical HDD/Disk image files.
+It can read and copy files from Ext2/Ext3/Ext4 partitions of Physical HDD(windows only) / Disk image files.
 
 **Attention:This tool is now developing and testing.**
 
