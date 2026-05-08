@@ -27,6 +27,7 @@
 #include <algorithm>
 
 #include "lvm.h"
+#include <cstring>
 
 
 LVM::LVM(FileHandle handle, lloff_t offset, Ext2Read *rd)

@@ -33,6 +33,7 @@
 #include "parttypes.h"
 #include "lvm.h"
 #include "gpt.h"
+#include <cstring>
 
 
 Ext2Read::Ext2Read()

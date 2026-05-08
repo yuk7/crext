@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include "platform.h"
+#include <cstring>
 
 struct GPTGuid {
     uint32_t Data1;

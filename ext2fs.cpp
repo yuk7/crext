@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include "ext2read.h"
 #include "lvm.h"
+#include <cstring>
 
 Ext2Partition::Ext2Partition(lloff_t size, lloff_t offset, int ssize, FileHandle phandle, LogicalVolume *vol)
 {

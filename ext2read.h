@@ -98,7 +98,7 @@ static INLINE const char *get_type_string(int type)
 
 static INLINE char *get_access(unsigned long mode)
 {
-	static char acc[9];
+	static char acc[10];
 	acc[0] = (mode & EXT2_S_IRUSR)? 'r':'-';
 	acc[1] = (mode & EXT2_S_IWUSR)? 'w':'-';
 	acc[2] = (mode & EXT2_S_IXUSR)? 'x':'-';
