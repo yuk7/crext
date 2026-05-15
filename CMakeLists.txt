@@ -7,17 +7,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Source files
 set(SOURCES
-    main.cpp
-    ext2fs.cpp
-    ext2read.cpp
-    lvm.cpp
-    log.c
-    platform_dos.c
-    platform_unix.c
-    platform_win32.c
+    src/main.cpp
+    src/core/ext2fs.cpp
+    src/core/ext2read.cpp
+    src/core/lvm.cpp
+    src/log/log.c
+    src/platform/platform_dos.c
+    src/platform/platform_unix.c
+    src/platform/platform_win32.c
 )
 
 add_executable(crext ${SOURCES})
+
+target_include_directories(crext PRIVATE
+    src/core
+    src/platform
+    src/log
+)
 
 # Platform specific configurations
 if(WIN32)
