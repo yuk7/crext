@@ -8,9 +8,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Source files
 set(SOURCES
     src/main.cpp
+    src/app/session.cpp
     src/core/ext2fs.cpp
     src/core/ext2read.cpp
     src/core/lvm.cpp
+    src/ext/copy.cpp
+    src/ext/dir_handle.cpp
+    src/ext/ext_path.cpp
+    src/ext/format.cpp
     src/log/log.c
     src/platform/platform_dos.c
     src/platform/platform_unix.c
@@ -20,7 +25,9 @@ set(SOURCES
 add_executable(crext ${SOURCES})
 
 target_include_directories(crext PRIVATE
+    src/app
     src/core
+    src/ext
     src/platform
     src/log
 )

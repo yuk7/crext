@@ -20,23 +20,17 @@
 #include <iomanip>
 #include <vector>
 #include <string>
-#include <sstream>
-#include <fstream>
-#include <filesystem>
 #include <time.h>
 #include <cstring>
-#include "lvm.h"
+#include "copy.h"
+#include "dir_handle.h"
+#include "ext_path.h"
+#include "format.h"
+#include "session.h"
 #include "ext2read.h"
 #include "ext2fs.h"
 
 using namespace std;
-namespace fs = std::filesystem;
-
-string mode_str(uint16_t mode);
-string time_str(uint32_t time, const char *format);
-bool copy_dir(Ext2File *srcfile, const string &destdir);
-bool copy_file(Ext2File *srcfile, string destfile);
-bool show_progress(int now, int max, const string &str);
 
 void show_help() {
     cout << "crext is command-line based ext image/partition reader." << endl;
@@ -112,18 +106,17 @@ int main(int argc, char *argv[])
         }
     }
 
-    Ext2Read *app = new Ext2Read(openfopt.empty());
+    Session session(openfopt.empty());
 
     if (!openfopt.empty()) {
-        int result = app->add_loopback(openfopt.c_str());
-        if (result <= 0) {
+        if (!session.open_image(openfopt)) {
             cout << "Open image file failed." << endl;
             LOG("No valid Ext2 Partitions found in the disk image.");
             return 1;
         }
     }
 
-    list<Ext2Partition *> parts = app->get_partitions();
+    list<Ext2Partition *> parts = session.partitions();
 
     if (parts.empty()) {
         cout << "ERR:No partitions detected." << endl;
@@ -140,14 +133,8 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    Ext2Partition *setpart = nullptr;
-    bool spsetd = false;
-    if (!setpart_requested && parts.size() == 1) {
-        setpart = parts.front();
-        spsetd = true;
-    }
-
-    if (!setpart_requested && parts.size() > 1) {
+    PartitionSelectStatus select_status = session.select_partition(optsetpart, setpart_requested);
+    if (select_status == PartitionSelectStatus::MultiplePartitions) {
         cout << "ERR:Multiple ext partitions detected." << endl;
         cout << "*Please select a partition with -s/--sp." << endl;
         cout << "*Available partitions:" << endl;
@@ -157,66 +144,30 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    for (auto part : parts) {
-        if (!setpart_requested && optsetpart == "0") {
-            if (part->get_linux_name().find("/dev/sd") == string::npos) {
-                setpart = part;
-                spsetd = true;
-            }
-        } else if (setpart_requested) {
-            if (part->get_linux_name().find(optsetpart) != string::npos) {
-                setpart = part;
-                spsetd = true;
-            }
-        }
-    }
-
-    if (!spsetd) {
+    if (select_status == PartitionSelectStatus::NotFound) {
         cout << "ERR:can't set partition." << endl;
         cout << "*Please make sure ext partitions name exist." << endl;
         return 1;
     }
+
+    Ext2Partition *setpart = session.selected_partition();
 
     string optepath = "";
     string optlpath = "";
     if (pargs.size() >= 1) optepath = pargs[0];
     if (pargs.size() >= 2) optlpath = pargs[1];
 
-    vector<string> epathlist;
-    {
-        stringstream ss(optepath);
-        string item;
-        while (getline(ss, item, '/')) {
-            if (!item.empty()) epathlist.push_back(item);
-        }
-    }
-
-    Ext2File *ptr = setpart->get_root();
-    ext2dirent *dirent = setpart->open_dir(ptr);
-    Ext2File *setefile = ptr;
-
-    for (const auto& path : epathlist) {
-        bool efsetd = false;
-        while ((ptr = setpart->read_dir(dirent)) != nullptr) {
-            if (ptr->file_name == path) {
-                setefile = ptr;
-                efsetd = true;
-                break;
-            }
-        }
-        if (!efsetd) {
-            cout << "ERR:Ext Path Not found" << endl;
-            cout << "*Please make sure path in selected ext partition exist." << endl;
-            return 1;
-        } else {
-            dirent = setpart->open_dir(setefile);
-        }
+    Ext2File *setefile = resolve_ext_path(setpart, optepath);
+    if (!setefile) {
+        cout << "ERR:Ext Path Not found" << endl;
+        cout << "*Please make sure path in selected ext partition exist." << endl;
+        return 1;
     }
 
     if (optcmd == "ls") {
         if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
-            ext2dirent *lsdirent = setpart->open_dir(setefile);
-            while (auto entry = setpart->read_dir(lsdirent)) {
+            DirHandle lsdirent(setpart, setefile);
+            while (auto entry = lsdirent.read()) {
                 cout << entry->file_name << endl;
             }
         } else {
@@ -250,8 +201,8 @@ int main(int argc, char *argv[])
         };
 
         if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
-            ext2dirent *lsdirent = setpart->open_dir(setefile);
-            while (auto entry = setpart->read_dir(lsdirent)) {
+            DirHandle lsdirent(setpart, setefile);
+            while (auto entry = lsdirent.read()) {
                 add_file_info(entry);
             }
         } else {
@@ -268,14 +219,18 @@ int main(int argc, char *argv[])
     }
 
     if (optcmd == "cp") {
-        if (!optepath.empty()) {
-            if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
-                copy_dir(setefile, optlpath);
-            } else {
-                copy_file(setefile, optlpath);
-            }
+        if (optepath.empty()) {
+            cout << "bad parameter" << endl;
+            cout << "Source path required." << endl;
+            return 1;
         }
-        return 0;
+        bool success;
+        if (EXT2_S_ISDIR(setefile->inode.i_mode)) {
+            success = copy_dir(setefile, optlpath);
+        } else {
+            success = copy_file(setefile, optlpath);
+        }
+        return success ? 0 : 1;
     }
 
     if (optcmd == "size") {
@@ -304,110 +259,4 @@ int main(int argc, char *argv[])
     show_help();
 
     return 0;
-}
-
-
-string mode_str(uint16_t mode)
-{
-    string str = "";
-    if (EXT2_S_ISREG(mode)) str += "-";
-    else if (EXT2_S_ISDIR(mode)) str += "d";
-    else if (EXT2_S_ISLINK(mode)) str += "l";
-    else str += "?";
-
-    str += (mode & EXT2_S_IRUSR) ? "r" : "-";
-    str += (mode & EXT2_S_IWUSR) ? "w" : "-";
-    str += (mode & EXT2_S_IXUSR) ? "x" : "-";
-    str += (mode & EXT2_S_IRGRP) ? "r" : "-";
-    str += (mode & EXT2_S_IWGRP) ? "w" : "-";
-    str += (mode & EXT2_S_IXGRP) ? "x" : "-";
-    str += (mode & EXT2_S_IROTH) ? "r" : "-";
-    str += (mode & EXT2_S_IWOTH) ? "w" : "-";
-    str += (mode & EXT2_S_IXOTH) ? "x" : "-";
-    return str;
-}
-
-string time_str(uint32_t time, const char *format)
-{
-    char str[256];
-    time_t timet = time;
-    struct tm *tm = localtime(&timet);
-    if (!tm) return "N/A";
-    strftime(str, 255, format, tm);
-    return string(str);
-}
-
-bool copy_dir(Ext2File *srcfile, const string &destdir)
-{
-    Ext2Partition *part = srcfile->partition;
-    ext2dirent *dirent = part->open_dir(srcfile);
-
-    fs::create_directories(destdir);
-
-    Ext2File *entry;
-    while ((entry = part->read_dir(dirent)) != nullptr) {
-        string cdestpath = (fs::path(destdir) / entry->file_name).string();
-        if (EXT2_S_ISDIR(entry->inode.i_mode)) {
-            copy_dir(entry, cdestpath);
-        } else {
-            copy_file(entry, cdestpath);
-        }
-    }
-    return true;
-}
-
-bool copy_file(Ext2File *srcfile, string destfile)
-{
-    if (destfile.empty() || fs::is_directory(destfile)) {
-        destfile = (fs::path(destfile) / srcfile->file_name).string();
-    }
-
-    if (!EXT2_S_ISREG(srcfile->inode.i_mode)) {
-        cout << "[Skipped  :Not a file] " << "SKIP  " << destfile << endl;
-        return false;
-    }
-
-    int blksize = srcfile->partition->get_blocksize();
-    vector<char> buffer(blksize);
-
-    ofstream filesav(destfile, ios::binary | ios::trunc);
-    if (!filesav.is_open()) {
-        LOG("Error creating file %s.\n", srcfile->file_name.c_str());
-        return false;
-    }
-
-    lloff_t blocks = srcfile->file_size / blksize;
-    lloff_t blkindex;
-    for (blkindex = 0; blkindex < blocks; blkindex++) {
-        if (srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer.data()) < 0) {
-            return false;
-        }
-        filesav.write(buffer.data(), blksize);
-        show_progress(blkindex, blocks, destfile);
-    }
-
-    int extra = srcfile->file_size % blksize;
-    if (extra) {
-        if (srcfile->partition->read_data_block(&srcfile->inode, blkindex, buffer.data()) < 0) {
-            return false;
-        }
-        filesav.write(buffer.data(), extra);
-    }
-    filesav.close();
-    show_progress(1, 1, destfile);
-    cout << endl;
-    return true;
-}
-
-bool show_progress(int now, int max, const string &str)
-{
-    int iprog = (max == 0) ? 100 : (int)((double)now / (double)max * 100);
-    if (iprog > 100) iprog = 100;
-    string progstr = "[";
-    for (int i = 0; i < (iprog / 5); i++) progstr += "=";
-    for (int i = (iprog / 5); i < 20; i++) progstr += " ";
-    progstr += "]";
-
-    cout << progstr << " " << setw(3) << iprog << "%  " << str << "\r" << flush;
-    return true;
 }
