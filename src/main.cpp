@@ -32,7 +32,7 @@ void show_help() {
     cout << "  -f, --fopen <ImgFilePath>  Open Image File" << endl;
     cout << "  -l, --lp                   List Partitions" << endl;
     cout << "  -s, --sp <Partition name>  Set Partition (default: 0)" << endl;
-    cout << "  -c, --cmd <Command>        ls|lsl|cp|size|mode|ctime|mtime|atime" << endl;
+    cout << "  -c, --cmd <Command>        ls|lsl|cat|cp|size|mode|ctime|mtime|atime" << endl;
     cout << "  --log                      Write log to file" << endl;
     cout << "  --help                     Show this help" << endl;
     cout << "  --version                  Show version" << endl;

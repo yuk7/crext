@@ -43,6 +43,10 @@ int execute_command(Ext2Partition *partition, const CommandRequest &request)
         return command_lsl(partition, file);
     }
 
+    if (request.name == "cat") {
+        return command_cat(file, request);
+    }
+
     if (request.name == "cp") {
         return command_cp(file, request);
     }

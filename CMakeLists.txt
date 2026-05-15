@@ -11,6 +11,7 @@ set(SOURCES
     src/app/cli_options.cpp
     src/app/session.cpp
     src/commands/commands.cpp
+    src/commands/cat.cpp
     src/commands/cp.cpp
     src/commands/ls.cpp
     src/commands/stat.cpp

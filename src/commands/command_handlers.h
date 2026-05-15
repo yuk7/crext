@@ -25,6 +25,7 @@ struct CommandRequest;
 
 int command_ls(Ext2Partition *partition, Ext2File *file);
 int command_lsl(Ext2Partition *partition, Ext2File *file);
+int command_cat(Ext2File *file, const CommandRequest &request);
 int command_cp(Ext2File *file, const CommandRequest &request);
 int command_stat(Ext2File *file, const CommandRequest &request);
 
