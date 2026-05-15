@@ -36,9 +36,11 @@
 #include <cstring>
 
 
-Ext2Read::Ext2Read()
+Ext2Read::Ext2Read(bool scan_disks)
 {
-    scan_system();
+    ndisks = 0;
+    if(scan_disks)
+        scan_system();
 }
 
 Ext2Read::~Ext2Read()
@@ -95,13 +97,26 @@ list<Ext2Partition *> Ext2Read::get_partitions()
     return nparts;
 }
 
+bool Ext2Read::try_add_partition(FileHandle handle, lloff_t start, lloff_t size, int sectsize, int disk, int partno)
+{
+    Ext2Partition *partition = new Ext2Partition(size, start, sectsize, handle, NULL);
+    if(partition->is_valid)
+    {
+        partition->set_linux_name("/dev/sd", disk, partno);
+        nparts.push_back(partition);
+        LOG("Linux Partition found on disk %d partition %d\n", disk, partno);
+        return true;
+    }
+
+    delete partition;
+    return false;
+}
 
 /* Reads The Extended Partitions */
 int Ext2Read::scan_ebr(FileHandle handle, lloff_t base, int sectsize, int disk)
 {
     unsigned char sector[SECTOR_SIZE];
     struct MBRpartition *part, *part1;
-    Ext2Partition *partition;
     int logical = 4, ret;
     lloff_t  ebrBase, nextPart, ebr2=0;
 
@@ -131,16 +146,7 @@ int Ext2Read::scan_ebr(FileHandle handle, lloff_t base, int sectsize, int disk)
 
         if(part->sys_ind == EXT2)
         {
-            partition = new Ext2Partition(get_nr_sects(part), get_start_sect(part)+ ebrBase + ebr2, sectsize, handle, NULL);
-            if(partition->is_valid)
-            {
-                partition->set_linux_name("/dev/sd", disk, logical);
-                nparts.push_back(partition);
-            }
-            else
-            {
-                delete partition;
-            }
+            try_add_partition(handle, get_start_sect(part)+ ebrBase + ebr2, get_nr_sects(part), sectsize, disk, logical);
         }
 
         if(part->sys_ind == LINUX_LVM)
@@ -167,7 +173,6 @@ int Ext2Read::scan_gpt(FileHandle handle, lloff_t base, int sectsize, int disk)
     unsigned char sector[SECTOR_SIZE];
     struct GPTHeader header;
     struct GPTPartition entry;
-    Ext2Partition *partition;
     char guid_buf[40];
     uint32_t i;
     int ret, j, entries_per_sector;
@@ -214,18 +219,7 @@ int Ext2Read::scan_gpt(FileHandle handle, lloff_t base, int sectsize, int disk)
                 gpt_guid_equal(&entry.type_guid, &gpt_guid_linux_fs_data) ||
                 gpt_guid_equal(&entry.type_guid, &gpt_guid_linux_home))
             {
-                partition = new Ext2Partition(entry.last_lba - entry.first_lba,
-                                              entry.first_lba, sectsize, handle, NULL);
-                if (partition->is_valid)
-                {
-                    partition->set_linux_name("/dev/sd", disk, i + j);
-                    nparts.push_back(partition);
-                    LOG("Linux Partition found on disk %d GPT partition %d\n", disk, i + j);
-                }
-                else
-                {
-                    delete partition;
-                }
+                try_add_partition(handle, entry.first_lba, entry.last_lba - entry.first_lba + 1, sectsize, disk, i + j + 1);
             }
         }
     }
@@ -238,7 +232,6 @@ int Ext2Read::scan_partitions(char *path, int diskno)
 {
     unsigned char sector[SECTOR_SIZE];
     struct MBRpartition *part;
-    Ext2Partition *partition;
     FileHandle handle;
     int sector_size;
     int ret, i;
@@ -278,17 +271,7 @@ int Ext2Read::scan_partitions(char *path, int diskno)
 
             if(part->sys_ind == EXT2)
             {
-                partition = new Ext2Partition(get_nr_sects(part), get_start_sect(part), sector_size, handle, NULL);
-                if(partition->is_valid)
-                {
-                    partition->set_linux_name("/dev/sd", diskno, i);
-                    nparts.push_back(partition);
-                    LOG("Linux Partition found on disk %d partition %d\n", diskno, i);
-                }
-                else
-                {
-                    delete partition;
-                }
+                try_add_partition(handle, get_start_sect(part), get_nr_sects(part), sector_size, diskno, i + 1);
             }
 
             if(part->sys_ind == LINUX_LVM)
@@ -320,8 +303,8 @@ int Ext2Read::add_loopback(const char *file)
     FileHandle handle;
     size_t old_count = nparts.size();
 
-    ndisks++;
-    ret = scan_partitions((char *)file, ndisks);
+    int diskno = ndisks++;
+    ret = scan_partitions((char *)file, diskno);
     if (nparts.size() > old_count)
         return 1;
 

@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
     string openfopt = "";
     bool listpart = false;
     string optsetpart = "0";
+    bool setpart_requested = false;
     string optcmd = "";
     bool use_log = false;
     vector<string> pargs;
@@ -67,7 +68,10 @@ int main(int argc, char *argv[])
         } else if (arg == "-l" || arg == "--lp") {
             listpart = true;
         } else if (arg == "-s" || arg == "--sp") {
-            if (i + 1 < argc) optsetpart = argv[++i];
+            if (i + 1 < argc) {
+                optsetpart = argv[++i];
+                setpart_requested = true;
+            }
         } else if (arg == "-c" || arg == "--cmd") {
             if (i + 1 < argc) optcmd = argv[++i];
         } else if (arg == "--log") {
@@ -108,7 +112,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    Ext2Read *app = new Ext2Read();
+    Ext2Read *app = new Ext2Read(openfopt.empty());
 
     if (!openfopt.empty()) {
         int result = app->add_loopback(openfopt.c_str());
@@ -138,13 +142,28 @@ int main(int argc, char *argv[])
 
     Ext2Partition *setpart = nullptr;
     bool spsetd = false;
+    if (!setpart_requested && parts.size() == 1) {
+        setpart = parts.front();
+        spsetd = true;
+    }
+
+    if (!setpart_requested && parts.size() > 1) {
+        cout << "ERR:Multiple ext partitions detected." << endl;
+        cout << "*Please select a partition with -s/--sp." << endl;
+        cout << "*Available partitions:" << endl;
+        for (auto part : parts) {
+            cout << part->get_linux_name() << endl;
+        }
+        return 1;
+    }
+
     for (auto part : parts) {
-        if (optsetpart == "0") {
+        if (!setpart_requested && optsetpart == "0") {
             if (part->get_linux_name().find("/dev/sd") == string::npos) {
                 setpart = part;
                 spsetd = true;
             }
-        } else {
+        } else if (setpart_requested) {
             if (part->get_linux_name().find(optsetpart) != string::npos) {
                 setpart = part;
                 spsetd = true;

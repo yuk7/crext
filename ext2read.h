@@ -192,6 +192,7 @@ private:
 
     list <Ext2Partition *> nparts;
 
+    bool try_add_partition(FileHandle, lloff_t, lloff_t, int, int, int);
     int scan_ebr(FileHandle , lloff_t , int , int);
     int scan_gpt(FileHandle , lloff_t , int , int);
     int scan_partitions(char *path, int);
@@ -199,7 +200,7 @@ private:
 
 
 public:
-    Ext2Read();
+    Ext2Read(bool scan_disks = true);
     ~Ext2Read();
 
     list <VolumeGroup *> groups;
