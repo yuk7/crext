@@ -16,33 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CREXT_APP_SESSION_H
-#define CREXT_APP_SESSION_H
+#ifndef CREXT_COMMANDS_COMMAND_HANDLERS_H
+#define CREXT_COMMANDS_COMMAND_HANDLERS_H
 
-#include <list>
-#include <string>
+class Ext2File;
+class Ext2Partition;
+struct CommandRequest;
 
-#include "ext2read.h"
+int command_ls(Ext2Partition *partition, Ext2File *file);
+int command_lsl(Ext2Partition *partition, Ext2File *file);
+int command_cp(Ext2File *file, const CommandRequest &request);
+int command_stat(Ext2File *file, const CommandRequest &request);
 
-enum class PartitionSelectStatus {
-    Selected,
-    MultiplePartitions,
-    NotFound,
-};
-
-class Session {
-public:
-    explicit Session(bool scan_disks);
-
-    bool open_image(const std::string &path);
-
-    std::list<Ext2Partition *> partitions();
-    Ext2Partition *selected_partition() const;
-    PartitionSelectStatus select_partition(const std::string &name, bool requested);
-
-private:
-    Ext2Read app;
-    Ext2Partition *selected;
-};
-
-#endif // CREXT_APP_SESSION_H
+#endif // CREXT_COMMANDS_COMMAND_HANDLERS_H

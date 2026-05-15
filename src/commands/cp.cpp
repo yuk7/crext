@@ -16,33 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CREXT_APP_SESSION_H
-#define CREXT_APP_SESSION_H
+#include "command_handlers.h"
 
-#include <list>
-#include <string>
+#include <iostream>
 
+#include "commands.h"
+#include "copy.h"
 #include "ext2read.h"
 
-enum class PartitionSelectStatus {
-    Selected,
-    MultiplePartitions,
-    NotFound,
-};
+using namespace std;
 
-class Session {
-public:
-    explicit Session(bool scan_disks);
+int command_cp(Ext2File *file, const CommandRequest &request)
+{
+    if (request.ext_path.empty()) {
+        cout << "bad parameter" << endl;
+        cout << "Source path required." << endl;
+        return 1;
+    }
 
-    bool open_image(const std::string &path);
-
-    std::list<Ext2Partition *> partitions();
-    Ext2Partition *selected_partition() const;
-    PartitionSelectStatus select_partition(const std::string &name, bool requested);
-
-private:
-    Ext2Read app;
-    Ext2Partition *selected;
-};
-
-#endif // CREXT_APP_SESSION_H
+    bool success;
+    if (EXT2_S_ISDIR(file->inode.i_mode)) {
+        success = copy_dir(file, request.local_path);
+    } else {
+        success = copy_file(file, request.local_path);
+    }
+    return success ? 0 : 1;
+}

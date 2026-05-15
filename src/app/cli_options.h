@@ -16,33 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CREXT_APP_SESSION_H
-#define CREXT_APP_SESSION_H
+#ifndef CREXT_APP_CLI_OPTIONS_H
+#define CREXT_APP_CLI_OPTIONS_H
 
-#include <list>
 #include <string>
+#include <vector>
 
-#include "ext2read.h"
-
-enum class PartitionSelectStatus {
-    Selected,
-    MultiplePartitions,
-    NotFound,
+struct CliOptions {
+    std::string image_path;
+    bool list_partitions = false;
+    std::string partition_name = "0";
+    bool partition_requested = false;
+    std::string command;
+    bool use_log = false;
+    bool show_help = false;
+    bool show_version = false;
+    std::vector<std::string> args;
 };
 
-class Session {
-public:
-    explicit Session(bool scan_disks);
-
-    bool open_image(const std::string &path);
-
-    std::list<Ext2Partition *> partitions();
-    Ext2Partition *selected_partition() const;
-    PartitionSelectStatus select_partition(const std::string &name, bool requested);
-
-private:
-    Ext2Read app;
-    Ext2Partition *selected;
+enum class CliValidationStatus {
+    Ok,
+    MissingAction,
+    ListPartitionsWithOtherOptions,
 };
 
-#endif // CREXT_APP_SESSION_H
+CliOptions parse_cli_options(int argc, char *argv[]);
+CliValidationStatus validate_cli_options(const CliOptions &options);
+
+#endif // CREXT_APP_CLI_OPTIONS_H
