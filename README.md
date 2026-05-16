@@ -105,6 +105,18 @@ show /bin/bash size
 1037464
 ```
 
+#### Interactive Shell
+```dos
+> crext -f diskdump.img -s /dev/sda2 -i
+crext:/> ls
+bin
+etc
+home
+...
+crext:/> cd bin
+crext:/bin> cp bash C:\bin\
+[====================] 100%  C:\bin\bash
+```
 
 ### License
 This program licensed under [GPLv3](https://github.com/yuk7/crext/blob/master/LICENSE).

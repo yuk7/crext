@@ -9,7 +9,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCES
     src/main.cpp
     src/app/cli_options.cpp
+    src/app/line_editor.cpp
     src/app/session.cpp
+    src/app/shell.cpp
+    src/commands/command_line.cpp
     src/commands/commands.cpp
     src/commands/cat.cpp
     src/commands/cp.cpp

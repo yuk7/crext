@@ -42,6 +42,8 @@ CliOptions parse_cli_options(int argc, char *argv[])
             }
         } else if (arg == "-c" || arg == "--cmd") {
             if (i + 1 < argc) options.command = argv[++i];
+        } else if (arg == "-i" || arg == "--sh") {
+            options.shell = true;
         } else if (arg == "--log") {
             options.use_log = true;
         } else if (arg == "--help") {
@@ -58,12 +60,20 @@ CliOptions parse_cli_options(int argc, char *argv[])
 
 CliValidationStatus validate_cli_options(const CliOptions &options)
 {
-    if (!(options.list_partitions || !options.command.empty())) {
+    if (!(options.list_partitions || !options.command.empty() || options.shell)) {
         return CliValidationStatus::MissingAction;
     }
 
     if (options.list_partitions && (!options.command.empty() || !options.args.empty())) {
         return CliValidationStatus::ListPartitionsWithOtherOptions;
+    }
+
+    if (options.shell && options.list_partitions) {
+        return CliValidationStatus::ShellWithListPartitions;
+    }
+
+    if (options.shell && !options.command.empty()) {
+        return CliValidationStatus::ShellWithCommand;
     }
 
     return CliValidationStatus::Ok;

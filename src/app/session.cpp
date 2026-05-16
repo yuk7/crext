@@ -18,10 +18,63 @@
 
 #include "session.h"
 
+#include <sstream>
+#include <vector>
+
+#include "ext_path.h"
+
 using namespace std;
 
+namespace {
+
+vector<string> split_path(const string &path)
+{
+    vector<string> parts;
+    stringstream ss(path);
+    string item;
+
+    while (getline(ss, item, '/')) {
+        if (!item.empty()) {
+            parts.push_back(item);
+        }
+    }
+
+    return parts;
+}
+
+string join_absolute_path(const vector<string> &parts)
+{
+    if (parts.empty()) {
+        return "/";
+    }
+
+    string result;
+    for (const auto &part : parts) {
+        result += "/";
+        result += part;
+    }
+    return result;
+}
+
+bool is_dot_parent_shorthand(const string &part)
+{
+    if (part.size() < 3) {
+        return false;
+    }
+
+    for (char ch : part) {
+        if (ch != '.') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+} // namespace
+
 Session::Session(bool scan_disks)
-    : app(scan_disks), selected(nullptr)
+    : app(scan_disks), selected(nullptr), current_working_directory("/")
 {
 }
 
@@ -70,4 +123,59 @@ PartitionSelectStatus Session::select_partition(const string &name, bool request
     }
 
     return PartitionSelectStatus::Selected;
+}
+
+const string &Session::cwd() const
+{
+    return current_working_directory;
+}
+
+string Session::resolve_shell_path(const string &path) const
+{
+    vector<string> parts;
+
+    if (path.empty()) {
+        return current_working_directory;
+    }
+
+    if (path[0] != '/') {
+        parts = split_path(current_working_directory);
+    }
+
+    for (const auto &part : split_path(path)) {
+        if (part == ".") {
+            continue;
+        }
+        if (part == "..") {
+            if (!parts.empty()) {
+                parts.pop_back();
+            }
+            continue;
+        }
+        if (is_dot_parent_shorthand(part)) {
+            for (size_t i = 1; i < part.size() && !parts.empty(); ++i) {
+                parts.pop_back();
+            }
+            continue;
+        }
+        parts.push_back(part);
+    }
+
+    return join_absolute_path(parts);
+}
+
+bool Session::set_cwd(const string &path)
+{
+    string resolved = resolve_shell_path(path);
+    Ext2File *file = resolve_ext_path(selected, resolved);
+    if (!file) {
+        return false;
+    }
+
+    if (!EXT2_S_ISDIR(file->inode.i_mode)) {
+        return false;
+    }
+
+    current_working_directory = resolved;
+    return true;
 }

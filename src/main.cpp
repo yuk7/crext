@@ -21,6 +21,7 @@
 #include "cli_options.h"
 #include "commands.h"
 #include "session.h"
+#include "shell.h"
 #include "ext2read.h"
 
 using namespace std;
@@ -33,6 +34,7 @@ void show_help() {
     cout << "  -l, --lp                   List Partitions" << endl;
     cout << "  -s, --sp <Partition name>  Set Partition (default: 0)" << endl;
     cout << "  -c, --cmd <Command>        ls|lsl|cat|cp|size|mode|ctime|mtime|atime" << endl;
+    cout << "  -i, --sh                   Start crext command prompt" << endl;
     cout << "  --log                      Write log to file" << endl;
     cout << "  --help                     Show this help" << endl;
     cout << "  --version                  Show version" << endl;
@@ -66,6 +68,20 @@ int main(int argc, char *argv[])
     if (validation == CliValidationStatus::ListPartitionsWithOtherOptions) {
         cout << "bad parameter" << endl;
         cout << "List partitions option cannot use with Other options" << endl << endl;
+        show_help();
+        return 1;
+    }
+
+    if (validation == CliValidationStatus::ShellWithListPartitions) {
+        cout << "bad parameter" << endl;
+        cout << "Command prompt option cannot use with List partitions option" << endl << endl;
+        show_help();
+        return 1;
+    }
+
+    if (validation == CliValidationStatus::ShellWithCommand) {
+        cout << "bad parameter" << endl;
+        cout << "Command prompt option cannot use with Command option" << endl << endl;
         show_help();
         return 1;
     }
@@ -115,6 +131,10 @@ int main(int argc, char *argv[])
     }
 
     Ext2Partition *setpart = session.selected_partition();
+
+    if (options.shell) {
+        return run_shell(session);
+    }
 
     CommandRequest request;
     request.name = options.command;

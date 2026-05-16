@@ -16,34 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CREXT_APP_CLI_OPTIONS_H
-#define CREXT_APP_CLI_OPTIONS_H
+#ifndef CREXT_APP_LINE_EDITOR_H
+#define CREXT_APP_LINE_EDITOR_H
 
 #include <string>
-#include <vector>
 
-struct CliOptions {
-    std::string image_path;
-    bool list_partitions = false;
-    std::string partition_name = "0";
-    bool partition_requested = false;
-    std::string command;
-    bool shell = false;
-    bool use_log = false;
-    bool show_help = false;
-    bool show_version = false;
-    std::vector<std::string> args;
-};
+bool read_shell_line(const std::string &prompt, std::string &line);
 
-enum class CliValidationStatus {
-    Ok,
-    MissingAction,
-    ListPartitionsWithOtherOptions,
-    ShellWithListPartitions,
-    ShellWithCommand,
-};
-
-CliOptions parse_cli_options(int argc, char *argv[]);
-CliValidationStatus validate_cli_options(const CliOptions &options);
-
-#endif // CREXT_APP_CLI_OPTIONS_H
+#endif // CREXT_APP_LINE_EDITOR_H
