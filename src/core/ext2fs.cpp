@@ -69,7 +69,7 @@ void Ext2Partition::set_linux_name(const char *name, int disk, int partition)
 {
     char dchar = 'a' + disk;
     char str_buffer[10];
-    sprintf(str_buffer,"%d",partition);
+    snprintf(str_buffer, sizeof(str_buffer), "%d", partition);
 
     linux_name = name;
     linux_name.append(1, dchar);

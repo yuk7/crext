@@ -59,6 +59,7 @@ struct GPTPartition {
 };
 
 #define GPT_HEADER_SIGNATURE           "EFI PART"
+#define GPT_GUID_STRING_SIZE           37
 
 static INLINE int valid_gpt_header(const struct GPTHeader* header) {
     return memcmp(header->signature, GPT_HEADER_SIGNATURE, sizeof(header->signature)) == 0;
@@ -72,10 +73,10 @@ static INLINE int gpt_guid_to_string(char* buf, const struct GPTGuid* guid) {
     unsigned char data4[8];
     memcpy(data4, &guid->Data4, sizeof(uint64_t));
 
-    return sprintf(buf, "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                   guid->Data1, guid->Data2, guid->Data3,
-                   data4[0], data4[1], data4[2], data4[3],
-                   data4[4], data4[5], data4[6], data4[7]);
+    return snprintf(buf, GPT_GUID_STRING_SIZE, "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                    guid->Data1, guid->Data2, guid->Data3,
+                    data4[0], data4[1], data4[2], data4[3],
+                    data4[4], data4[5], data4[6], data4[7]);
 }
 
 #define GPT_GUID(name, data1, data2, data3, data4a, data4b) \
