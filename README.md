@@ -21,6 +21,7 @@ Options:
   -s, --sp <Partition name>             Set Partition
   -c, --cmd <ls|lsl|cat|cp|size|mode|
                     ctime|mtime|atime>  Command
+  -i, --sh                              Start crext command prompt
 
 Arguments:
   ePath                                 Source Path(Ext Partition)
@@ -105,7 +106,7 @@ show /bin/bash size
 1037464
 ```
 
-#### Interactive Shell
+#### crext command prompt
 ```dos
 > crext -f diskdump.img -s /dev/sda2 -i
 crext:/> ls
