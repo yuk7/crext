@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(crext VERSION 2.6.0)
+project(crext VERSION 3.0.0)
 
 # C++17 Standard
 set(CMAKE_CXX_STANDARD 17)

@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     }
 
     if (options.show_version) {
-        cout << "crext version 2.6.0b" << endl;
+        cout << "crext version 3.0.0" << endl;
         return 0;
     }
 
